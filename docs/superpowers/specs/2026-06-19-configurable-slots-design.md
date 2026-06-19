@@ -27,9 +27,9 @@ stay independent and coordinate only through files.
 > the full default config with nothing installed. Installed plugins are only ever an
 > *optional* `config.local.json` override, never a default and never a prerequisite.
 
-Chosen fillers (defaults):
+Chosen use values (defaults):
 
-| Slot | Default filler | Source | Default model |
+| Slot | Default use value | Source | Default model |
 |------|---------------|--------|---------------|
 | `validate` | `brainstorming` | superpowers (`obra/superpowers`) | opus |
 | `architect` | `writing-plans` | superpowers | opus |
@@ -67,7 +67,7 @@ lenses can review the same diff.
    not used verbatim (see §5).
 5. **File-marker gate is the spine.** Plan mode and superpowers are layered on top:
    plan mode is an optional CLI front-end for the design gate; superpowers skills are
-   vendored phase fillers with their own gate/commit steps stripped (the orchestrator
+   vendored phase use values with their own gate/commit steps stripped (the orchestrator
    owns the gate). This preserves resumability and web portability.
 
 ---
@@ -76,42 +76,42 @@ lenses can review the same diff.
 
 ### `.devforge/config.json` (committed default)
 
-```json
+``json
 {
   "slots": {
-    "validate":       { "filler": "brainstorming",  "model": "opus" },
-    "architect":      { "filler": "writing-plans",   "model": "opus" },
-    "implementer":     { "filler": "feature-dev", "model": "opus" },
+    "validate":       { "use": "brainstorming",  "model": "opus" },
+    "architect":      { "use": "writing-plans",   "model": "opus" },
+    "implementer":     { "use": "feature-dev", "model": "opus" },
     "reviewers": [
-      { "filler": "staff-review",  "model": "sonnet" },
-      { "filler": "thermonuclear", "model": "sonnet" }
+      { "use": "staff-review",  "model": "sonnet" },
+      { "use": "thermonuclear", "model": "sonnet" }
     ],
     "final_reviewers": [
-      { "filler": "code-review",   "model": "sonnet" }
+      { "use": "code-review",   "model": "sonnet" }
     ]
   },
   "limits": { "inner_iterations": 3, "final_review_rounds": 2 },
   "plan_mode_gate": true
 }
-```
+``
 
 - **`.devforge/config.local.json`** (already gitignored) shallow-merges over
   `config.json` for per-environment overrides — e.g. pointing a slot at a
   locally-installed skill instead of the vendored copy.
-- The orchestrator loads config at setup, validates every `filler` against the
-  **registry** (§4) for that slot, and **errors clearly** on an unknown filler or a
-  filler not allowed in that slot (e.g. a reviewer filler in the implementer slot).
+- The orchestrator loads config at setup, validates every `use` against the
+  **registry** (§4) for that slot, and **errors clearly** on an unknown use value or a
+  use value not allowed in that slot (e.g. a reviewer use value in the implementer slot).
 - Missing config → the defaults above (the orchestrator writes the default file on a
   fresh run so it's visible and editable).
 - `plan_mode_gate: false` disables the plan-mode front-end (always falls back to the
   marker skill — required behavior on web/headless).
 
-### Slot → filler registry
+### Slot → use value registry
 
 A small table the orchestrator consults to (a) reject invalid configs and (b) resolve
-a filler name to its adapter skill directory.
+a use value to its adapter skill directory.
 
-| Slot | Allowed fillers |
+| Slot | Allowed use values |
 |------|-----------------|
 | `validate` | `brainstorming`, `builtin` |
 | `architect` | `writing-plans`, `builtin` |
@@ -121,14 +121,14 @@ a filler name to its adapter skill directory.
 
 `builtin` = devforge's current inline skeleton step for that phase (always available,
 no vendored engine). An **empty `final_reviewers` list** skips the final pass. A
-duplicate filler within one list is rejected. Each reviewer entry resolves to the same
+duplicate use value within one list is rejected. Each reviewer entry resolves to the same
 adapter regardless of which list it appears in.
 
 ---
 
 ## 4. Loop control (orchestrator)
 
-```
+``
 validate (validate slot)  ─┐
 explore  (orchestrator)    │ read-only — optional plan-mode front-end
 architect (architect slot) ─┘ → design.md
@@ -139,11 +139,11 @@ architect (architect slot) ─┘ → design.md
    │ implementer slot  → edits source, writes iter-N/claim.md               │
    │ orchestrator      → oracle (tests/lint) + git diff → diff.patch        │
    │ reviewers (∥)     → each reads diff.patch+results (blind to claim and  │
-   │                     to each other) → iter-N/review-<filler>.md         │
+   │                     to each other) → iter-N/review-<use>.md         │
    │ converged? green AND every finding across ALL review-*.md resolved     │
    └───────────────────────────────────────────────────────────────────────┘
         │ converged
-   final_reviewers (∥) → each reads diff.patch + working tree → iter-N/final-review-<filler>.md
+   final_reviewers (∥) → each reads diff.patch + working tree → iter-N/final-review-<use>.md
         │
    actionable findings in any? ── yes ──► reopen inner loop (counts against
         │                                 final_review_rounds; escalate if exceeded)
@@ -151,11 +151,11 @@ architect (architect slot) ─┘ → design.md
    PRE-MERGE GATE  → rich diff presentation, /devforge-approve-merge → merge.approved
         │
    finish (commit, PR)
-```
+``
 
 - **Reviewers run in parallel** each iteration, one independent subagent per entry in
   the `reviewers` list, each blind to `claim.md` and to the others. Each writes its own
-  `iter-N/review-<filler>.md` (e.g. `review-staff-review.md`, `review-thermonuclear.md`),
+  `iter-N/review-<use>.md` (e.g. `review-staff-review.md`, `review-thermonuclear.md`),
   first line `VERDICT: PASS|FAIL`, severity-tagged findings. The orchestrator
   aggregates findings across all of them.
 - **Inner-loop convergence:** oracle green **and** every finding across **all**
@@ -164,7 +164,7 @@ architect (architect slot) ─┘ → design.md
   correctness reviewer would keep minimal), the orchestrator records the reconciliation
   in the next `claim.md`. Escalate after `inner_iterations` without converging.
 - **Final review** runs once after convergence: each entry in `final_reviewers` as a
-  parallel subagent → `iter-N/final-review-<filler>.md` (same format and independence
+  parallel subagent → `iter-N/final-review-<use>.md` (same format and independence
   rule — reads `diff.patch` + working tree, never `claim.md`). Actionable findings from
   any of them become the finding set for a fresh inner iteration (implement → oracle →
   reviewers), after which the final reviewers re-run. Bounded by `final_review_rounds`;
@@ -176,7 +176,7 @@ architect (architect slot) ─┘ → design.md
 
 ### Layout
 
-```
+``
 .claude/skills/
   devforge/                      orchestrator — reads config, dispatches slots, plan-mode front-end
   devforge-approve-design/       (existing, unchanged)
@@ -193,7 +193,7 @@ architect (architect slot) ─┘ → design.md
   devforge-code-architect.md
 VENDORED.md                      provenance per entry: upstream repo + path + version/commit + adaptation notes
 docs/devforge-config.md          configuration catalog (§6)
-```
+``
 
 ### Adapter contract
 
@@ -201,8 +201,8 @@ Each adapter SKILL.md:
 1. **Reads** its slot inputs from `.devforge/` (e.g. reviewer reads `task.md`,
    `design.md`, `iter-N/diff.patch`, `iter-N/test-results.txt`).
 2. **Drives** the vendored engine in `_vendored/…`, scoped to devforge's job.
-3. **Writes** the contract output (`claim.md`, `review-<filler>.md`, or
-   `final-review-<filler>.md`) in the required format.
+3. **Writes** the contract output (`claim.md`, `review-<use>.md`, or
+   `final-review-<use>.md`) in the required format.
 
 Adapters are thin (instructions only); `_vendored/` holds untouched engines so a
 re-sync is a clean diff. Per-slot scoping notes:
@@ -249,11 +249,11 @@ pinned at vendor time, and the adaptation notes above — so re-sync is delibera
 
 A human-facing doc that makes the slots and their options clear. Contents:
 
-1. **What a slot is** — a role defined by the files it reads/writes; the filler is
+1. **What a slot is** — a role defined by the files it reads/writes; the use value is
    config. The oracle (tests/lint) is *not* a slot.
 2. **Per-slot table** — for each slot (`validate`, `architect`, `implementer`,
-   `reviewers`, `final_reviewers`): what it reads, what it writes, the allowed fillers,
-   a one-line description of each filler, and the recommended model.
+   `reviewers`, `final_reviewers`): what it reads, what it writes, the allowed use values,
+   a one-line description of each use value, and the recommended model.
 3. **Example configs (ready to paste):**
    - **`default`** — the schema in §3 (reviewers = staff-review + thermonuclear; final
      = code-review).
@@ -285,12 +285,12 @@ The README's "Planned — enrichment" section is updated to "Built" and points h
 devforge is skills (markdown), so "tests" are structural + a dogfood run:
 
 1. **Config validation** — unit-style checks (the existing `tests/` Python harness or a
-   small script): valid config parses; unknown filler errors; a filler not allowed in a
+   small script): valid config parses; unknown use value errors; a use value not allowed in a
    slot errors (e.g. `feature-dev` in `reviewers`); `reviewers`/`final_reviewers` accept
-   lists; a duplicate filler within one list errors; an empty `final_reviewers` list is
+   lists; a duplicate use value within one list errors; an empty `final_reviewers` list is
    valid and skips the final stage; `config.local.json` overrides merge correctly;
    missing config yields defaults.
-2. **Vendoring integrity** — every `filler` in the registry resolves to an existing
+2. **Vendoring integrity** — every `use` in the registry resolves to an existing
    adapter dir; every adapter references an existing `_vendored/` engine; `VENDORED.md`
    has an entry per vendored item. **No-install guard:** no committed skill/adapter
    references a `plugins/`, `~/.claude/plugins`, or plugin-cache path — every default
@@ -299,4 +299,4 @@ devforge is skills (markdown), so "tests" are structural + a dogfood run:
 3. **Dogfood** — run `/devforge` on a small task in this repo end-to-end with the
    `default` config and again with `builtin-only`, confirming both gates fire, the
    multi-reviewer flow runs, and `final-review-*.md` is produced.
-```
+``

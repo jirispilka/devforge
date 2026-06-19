@@ -1,0 +1,7 @@
+{
+  "validate":        ["brainstorming", "builtin"],
+  "architect":       ["writing-plans", "builtin"],
+  "implementer":     ["feature-dev", "builtin"],
+  "reviewers":       ["staff-review", "thermonuclear", "code-review", "builtin"],
+  "final_reviewers": ["code-review", "staff-review", "thermonuclear"]
+}
