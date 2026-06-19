@@ -10,9 +10,11 @@ independent so the reviewer judges the *actual change* — never the implementer
      ┌─ iteration N ──────────────────────────────────────────────┐
      │ implementer edits source, writes claim.md                   │
      │ orchestrator runs the oracle (tests/lint) + computes diff   │
-     │ reviewer reads the diff + results → review.md (PASS/FAIL)   │
-     │ green + all findings resolved → done │ else → next iter │ 3 fails → escalate │
+     │ reviewers (parallel, e.g. correctness + maintainability)    │
+     │   each read the diff → review-<use>.md (PASS/FAIL)          │
+     │ green + all findings resolved → converged │ else → next iter│
      └─────────────────────────────────────────────────────────────┘
+   final reviewers (2nd-angle pass) → findings reopen the loop, else
    → [PRE-MERGE GATE: human] → merge
 ```
 
@@ -110,7 +112,9 @@ already-fixed — so the design is built on current reality.
 ## Configuration
 
 Each phase is a **slot** filled by a vendored skill named in `.devforge/config.json`
-(the slot's `use`) and run through a thin adapter. Defaults:
+(the slot's `use`). One universal dispatch contract drives every engine — no per-skill
+adapters; `.devforge/registry.json` maps each `use` to its role, vendored engine, and a
+one-line scope. Defaults:
 
 ```json
 {
@@ -130,42 +134,31 @@ Each phase is a **slot** filled by a vendored skill named in `.devforge/config.j
 Every iteration runs the implementer, then **all `reviewers` in parallel** (each blind to
 `claim.md` and to each other); once they converge, the **`final_reviewers`** run a fresh
 second-angle pass whose findings feed back into the loop. Every engine is **vendored
-in-repo** under `.claude/skills/_vendored/` (nothing to install). Full catalog, example
-configs (`fast-cheap` / `max-rigor` / `builtin-only`), and override rules:
+in-repo** under `.claude/skills/_vendored/` (nothing to install), driven by a single
+dispatch contract — swapping a slot is a one-word config edit, not a new wrapper. Full
+catalog, example configs (`fast-cheap` / `max-rigor`), and override rules:
 **[`docs/devforge-config.md`](docs/devforge-config.md)**. Provenance:
 **[`VENDORED.md`](VENDORED.md)**.
 
 ## Status
 
-- **Built — control plane:** the `/devforge` orchestrator, the two human-only approvals,
-  self-enforced gates, the `.devforge/` file contract, and the validate-phase
-  claim/staleness check.
-- **Built — configurable slots:** `.devforge/config.json` + registry + validation;
-  subagent dispatch per slot on a chosen model; the implementer (`feature-dev`), parallel
-  per-iteration reviewers (`staff-review` + `thermonuclear`), and a final reviewer
-  (`code-review`), plus superpowers `brainstorming`/`writing-plans` for validate/architect
-  — all **vendored** into `.claude/skills/_vendored/` with `VENDORED.md` provenance; a
-  plan-mode front-end for the design gate; and a structural test suite (`tests/`) incl. a
-  no-install guard.
-- **Not vendored:** domain skills (e.g. an MCP repo's `dig`) stay in their target repo and
-  are optional `config.local.json` slot swaps where installed.
+Working end-to-end: the orchestrator, both human gates, the `.devforge/` file contract,
+the validate-phase staleness check, config-driven slot dispatch on per-slot models, the
+parallel multi-reviewer loop + final-review pass, the plan-mode design gate, and a
+structural test suite (incl. the no-install guard). All slot engines are vendored in-repo;
+domain skills (e.g. an MCP repo's `dig`) stay in their own repo as optional
+`config.local.json` swaps.
 
 ## Layout
 
 ```
 .claude/skills/          the tool (loads on web; never holds run data)
-  devforge/SKILL.md           the orchestrator
+  devforge/SKILL.md           the orchestrator (incl. the universal slot-dispatch contract)
   devforge-approve-design/    human-only design-gate approval
   devforge-approve-merge/     human-only pre-merge-gate approval
-  devforge-impl-feature-dev/  implementer adapter (→ vendored feature-dev)
-  devforge-review-staff/      reviewer adapter (→ vendored staff-review)
-  devforge-review-thermo/     reviewer adapter (→ vendored thermonuclear)
-  devforge-review-code/       final-reviewer adapter (→ vendored code-review)
-  devforge-validate-brainstorm/  validate adapter (→ vendored brainstorming)
-  devforge-architect-plans/   architect adapter (→ vendored writing-plans)
   _vendored/                  faithful upstream engine copies (see VENDORED.md)
 .claude/agents/          devforge-code-explorer / -architect (grounding agents)
-.devforge/               a run's working files + config.json / registry.json
+.devforge/               a run's working files + config.json / registry.json / config.schema.json
 docs/devforge-config.md  the configuration catalog
 scripts/validate_config.py  config validator (CI/tests; rules mirror the orchestrator)
 tests/                   structural test suite (schema, registry, vendoring, no-install)

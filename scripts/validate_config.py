@@ -1,10 +1,12 @@
-"""Validate a devforge config against the slot->use registry.
+"""Validate a devforge config against the registry.
 
 Pure stdlib. Used by tests/CI; the orchestrator follows the same rules in prose
 (it has no Python runtime on web). Keep the two in sync.
 
-Each slot value is an object `{ "use": "<name>", "model": "<model>" }`; the registry
-maps each slot to the list of names it may use.
+Config slot values are objects `{ "use": "<name>", "model": "<model>" }`. The registry
+maps each slot to a role (`slot_roles`) and each `use` name to the roles it may fill
+plus its engine + scope (`uses`). A `use` is valid in a slot when that slot's role is in
+the use's `roles`.
 """
 from __future__ import annotations
 
@@ -13,9 +15,15 @@ LIST_SLOTS = ("reviewers", "final_reviewers")
 
 
 def _check_use(slot: str, name: str, registry: dict, errs: list[str]) -> None:
-    allowed = registry.get(slot, [])
-    if name not in allowed:
-        errs.append(f"'{name}' is not allowed in slot '{slot}' (allowed: {allowed})")
+    uses = registry["uses"]
+    if name not in uses:
+        errs.append(f"unknown use '{name}' in slot '{slot}'")
+        return
+    role = registry["slot_roles"][slot]
+    roles = uses[name]["roles"]
+    if role not in roles:
+        errs.append(f"'{name}' is not allowed in slot '{slot}' (role '{role}'; "
+                    f"it fills roles {roles})")
 
 
 def validate(config: dict, registry: dict) -> list[str]:

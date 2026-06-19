@@ -28,13 +28,17 @@ def test_orchestrator_dispatches_reviewers_in_parallel():
     assert "final_reviewers" in ORCH
 
 
-def test_orchestrator_has_dispatch_map_for_every_adapter():
-    for adapter in (
-        "devforge-validate-brainstorm",
-        "devforge-architect-plans",
-        "devforge-impl-feature-dev",
-        "devforge-review-staff",
-        "devforge-review-thermo",
-        "devforge-review-code",
-    ):
-        assert adapter in ORCH, f"orchestrator missing dispatch entry for {adapter}"
+def test_orchestrator_uses_universal_dispatch_not_per_skill_adapters():
+    # The simplification: one contract driven by the registry, no per-skill adapters.
+    assert "Slot dispatch" in ORCH
+    assert "registry.slot_roles" in ORCH and "registry.uses" in ORCH
+    assert "no per-skill adapter" in ORCH.lower() or "no per-skill adapters" in ORCH.lower()
+
+
+def test_no_per_skill_adapter_dirs_remain():
+    skills = REPO_ROOT / ".claude/skills"
+    leftover = [p.name for p in skills.glob("devforge-review-*")]
+    leftover += [p.name for p in skills.glob("devforge-impl-*")]
+    leftover += [p.name for p in skills.glob("devforge-validate-*")]
+    leftover += [p.name for p in skills.glob("devforge-architect-*")]
+    assert leftover == [], f"per-skill adapter dirs should be gone: {leftover}"

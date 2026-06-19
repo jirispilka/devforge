@@ -6,18 +6,20 @@ and writes; what *fills* it — which vendored skill, on which model — is conf
 without any change to the orchestrator. The **oracle** (your project's tests/lint) is the
 deterministic ground truth and is **not** a slot.
 
-Every engine is **vendored in this repo** (`.claude/skills/_vendored/`) and run through a
-thin adapter (`.claude/skills/devforge-*`). Nothing needs installing — see
-[`VENDORED.md`](../VENDORED.md).
+Every engine is **vendored in this repo** (`.claude/skills/_vendored/`) and driven by a
+single universal dispatch contract in the orchestrator — there are no per-skill adapter
+files. Each `use` maps (in `.devforge/registry.json`) to the roles it can fill, its
+vendored engine path, and a one-line scope note; the orchestrator fills one template
+from that. Nothing needs installing — see [`VENDORED.md`](../VENDORED.md).
 
 ## The slots
 
 | Slot | Runs | Reads | Writes | `use` options (default **bold**) | Model |
 |------|------|-------|--------|----------------------------------|-------|
-| `validate` | once, first | the task / issue, codebase | `task.md`, `validation.md` | **`brainstorming`**, `builtin` | opus |
-| `architect` | once, after explore | `task.md`, `validation.md`, codebase | `design.md` | **`writing-plans`**, `builtin` | opus |
-| `implementer` | every iteration | `design.md`, prior reviews | source edits, `claim.md` | **`feature-dev`**, `builtin` | opus |
-| `reviewers` (list) | every iteration, parallel | `diff.patch`, `test-results.txt`, spec | `review-<use>.md` each | **`staff-review`** + **`thermonuclear`**, `code-review`, `builtin` | sonnet |
+| `validate` | once, first | the task / issue, codebase | `task.md`, `validation.md` | **`brainstorming`** | opus |
+| `architect` | once, after explore | `task.md`, `validation.md`, codebase | `design.md` | **`writing-plans`** | opus |
+| `implementer` | every iteration | `design.md`, prior reviews | source edits, `claim.md` | **`feature-dev`** | opus |
+| `reviewers` (list) | every iteration, parallel | `diff.patch`, `test-results.txt`, spec | `review-<use>.md` each | **`staff-review`** + **`thermonuclear`**, `code-review` | sonnet |
 | `final_reviewers` (list) | after convergence, parallel | `diff.patch` + working tree, spec | `final-review-<use>.md` each | **`code-review`**, `staff-review`, `thermonuclear` | sonnet |
 
 ### What each engine does
@@ -32,7 +34,9 @@ thin adapter (`.claude/skills/devforge-*`). Nothing needs installing — see
   ceiling, spaghetti-branch growth, "code-judo" simplification.
 - **`code-review`** — multi-agent bug / CLAUDE.md / git-history pass with confidence
   scoring (retargeted from a PR to the iteration diff).
-- **`builtin`** — devforge's own inline skeleton step for that phase; no vendored engine.
+
+To add an option, vendor its engine and add a row to `.devforge/registry.json`
+(`use` → roles + engine + scope). No new skill file needed.
 
 Each reviewer runs as an independent subagent, **blind to `claim.md` and to the other
 reviewers**, so the lenses stay genuinely independent.
@@ -107,23 +111,6 @@ reviewers**, so the lenses stay genuinely independent.
   },
   "limits": { "inner_iterations": 5, "final_review_rounds": 3 },
   "plan_mode_gate": true
-}
-```
-
-### `builtin-only` — no vendored engines (dependency-free smoke test)
-```json
-{
-  "slots": {
-    "validate":    { "use": "builtin" },
-    "architect":   { "use": "builtin" },
-    "implementer": { "use": "builtin" },
-    "reviewers": [
-      { "use": "builtin" }
-    ],
-    "final_reviewers": []
-  },
-  "limits": { "inner_iterations": 2, "final_review_rounds": 0 },
-  "plan_mode_gate": false
 }
 ```
 

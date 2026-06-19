@@ -15,12 +15,14 @@ source before the design is approved, and cannot push/merge before merge is appr
 > `.claude/skills/` is the tool (config); `.devforge/` is this run's data.
 
 > **Config-driven slots.** Each phase is a *slot* filled by a vendored skill named in
-> `.devforge/config.json` and run through a thin adapter under `.claude/skills/`. The
-> default slots: validate ← `brainstorming`, architect ← `writing-plans`, implementer ←
-> `feature-dev`, reviewers ← `staff-review` + `thermonuclear` (parallel, every
-> iteration), final_reviewers ← `code-review` (after convergence). Every engine is
-> **vendored in-repo** (`.claude/skills/_vendored/`) — nothing needs installing. See
-> `docs/devforge-config.md` for the catalog. The oracle (tests/lint) is **not** a slot.
+> `.devforge/config.json`. There are **no per-skill adapters** — one universal dispatch
+> contract (see *Slot dispatch*) drives every engine, parameterized by
+> `.devforge/registry.json`. The default slots: validate ← `brainstorming`, architect ←
+> `writing-plans`, implementer ← `feature-dev`, reviewers ← `staff-review` +
+> `thermonuclear` (parallel, every iteration), final_reviewers ← `code-review` (after
+> convergence). Every engine is **vendored in-repo** (`.claude/skills/_vendored/`) —
+> nothing needs installing. See `docs/devforge-config.md` for the catalog. The oracle
+> (tests/lint) is **not** a slot.
 
 ## File contract (`.devforge/`)
 
@@ -73,30 +75,40 @@ to its peers.
   - If `.devforge/config.local.json` exists, **shallow-merge** it over `config.json`
     (per-slot overrides win) — use it, don't rewrite `config.json`.
   - **Validate** the resolved config against `.devforge/registry.json` (the rules
-    `scripts/validate_config.py` encodes): every slot present; each slot's `use` is in
-    that slot's allowed list; no duplicate `use` within `reviewers` / `final_reviewers`.
-    On any error, **STOP** and print the exact problem and the slot's allowed list — do
-    not run with an invalid config.
+    `scripts/validate_config.py` encodes): every slot present; each `use` exists and its
+    slot's role (`registry.slot_roles[slot]`) is in that use's `roles`; no duplicate
+    `use` within `reviewers` / `final_reviewers`. On any error, **STOP** and print the
+    exact problem — do not run with an invalid config.
   - Read `limits.inner_iterations` (default 3), `limits.final_review_rounds` (default
     2), and `plan_mode_gate` (default true). Record the resolved config in
     `progress.md`.
 
-> **Slot dispatch (how a slot runs).** To run a slot, resolve its `use` to an adapter
-> skill via this map, then dispatch a subagent **on the slot's `model`** and tell it to
-> follow that adapter's `SKILL.md`:
->
-> | `use` | adapter skill |
-> |-------|---------------|
-> | `brainstorming` | `devforge-validate-brainstorm` |
-> | `writing-plans` | `devforge-architect-plans` |
-> | `feature-dev` | `devforge-impl-feature-dev` |
-> | `staff-review` | `devforge-review-staff` |
-> | `thermonuclear` | `devforge-review-thermo` |
-> | `code-review` | `devforge-review-code` |
-> | `builtin` | the inline skeleton step described in that phase below |
->
-> The subagent communicates only through `.devforge/` files. Reviewers are dispatched
-> **blind to `claim.md`** and to each other.
+### Slot dispatch (one universal contract)
+
+There are **no per-skill adapter files** — every slot runs through this one contract,
+parameterized by data in `.devforge/registry.json`. To run slot **S** with value
+`{ "use": U, "model": M }`:
+
+1. Resolve `role = registry.slot_roles[S]`, and `engine = registry.uses[U].engine`,
+   `scope = registry.uses[U].scope`.
+2. Dispatch a **subagent on model M** whose entire instruction is the filled template:
+
+   > You are filling devforge's **{role}** slot. Communicate only through `.devforge/`
+   > files. **Read:** {role.reads}. **Do NOT read:** {role.blind}. **Method:** follow
+   > `{engine}` — scoped as: {scope}. **Write:** `{role.writes}` in this format:
+   > {role.format}.
+
+**Role contract** (the `{role.*}` values above):
+
+| role | reads | do NOT read | writes | format |
+|------|-------|-------------|--------|--------|
+| `validate` | the `<task>`/issue, codebase, `gh` | — | `task.md` + `validation.md` | claim ledger + one-line verdict |
+| `architect` | `task.md`, `validation.md`, codebase | — | `design.md` | approach · files to change · test strategy (oracle) · risks |
+| `implementer` | `design.md`, all prior `iter-*/review-*.md` + `final-review-*.md` | — | source edits + `iter-N/claim.md` | what done / skipped + specific reason / evidence — **never edit or delete tests** |
+| `reviewer` | `task.md`, `design.md`, `iter-N/diff.patch`, `iter-N/test-results.txt` | `claim.md`, peer reviewers' output | `iter-N/review-<use>.md` | first line `VERDICT: PASS\|FAIL`, then severity-tagged findings (blocker/major/minor/nit) |
+| `final_reviewer` | `task.md`, `design.md`, `iter-N/diff.patch`, working tree | `claim.md`, peer reviewers' output | `iter-N/final-review-<use>.md` | first line `VERDICT: PASS\|FAIL`, then severity-tagged findings |
+
+`<use>` in a filename is the value's `use` name (e.g. `review-staff-review.md`).
 
 > **Approval auto-continues.** At each gate the human runs the human-only approval skill,
 > which records the marker and then **hands straight back to `/devforge`** — the loop
@@ -105,9 +117,9 @@ to its peers.
 > already in progress.
 
 ### 1. Validate — incl. claim & staleness check
-**Run the `validate` slot** (dispatch per *Slot dispatch* — default `brainstorming` via
-`devforge-validate-brainstorm`). Confirm the task is specific enough to act on **and that
-its premises are still true.** The steps below are the contract the slot fulfils.
+**Run the `validate` slot** (dispatch per *Slot dispatch* — default `brainstorming`).
+Confirm the task is specific enough to act on **and that its premises are still true.**
+The steps below are the contract the slot fulfils.
 
 **If the task references a GitHub issue (number/URL) or cites specific code locations,**
 run a staleness check *before designing* — issues drift from the code (files move,
@@ -139,7 +151,7 @@ Read the relevant parts of the codebase to ground the design. Note key files/pat
 in `progress.md`. Set `state.phase="architect"`.
 
 ### 3. Architect
-**Run the `architect` slot** (default `writing-plans` via `devforge-architect-plans`).
+**Run the `architect` slot** (default `writing-plans`, dispatched per *Slot dispatch*).
 It writes `.devforge/design.md`: the approach, the specific files to change, the test
 strategy (the oracle), and risks. This is the artifact reviewed at the design gate.
 Set `state.phase="design-gate"`.
@@ -160,8 +172,8 @@ Set `state.phase="design-gate"`.
 
 ### 5. Inner loop  (implement → oracle → reviewers), iteration N = 1, 2, …
 For each iteration, make a fresh `.devforge/iter-N/` directory, then:
-- **Implement** — run the `implementer` slot (default `feature-dev` via
-  `devforge-impl-feature-dev`) on `slots.implementer.model`. It applies `design.md` and
+- **Implement** — run the `implementer` slot (default `feature-dev`, dispatched per
+  *Slot dispatch*) on `slots.implementer.model`. It applies `design.md` and
   **addresses every finding from all of the prior iteration's `review-*.md` /
   `final-review-*.md` — blockers AND nits** (smallest proportionate fix; skip only with a
   specific recorded reason — "out of scope" alone is not a reason). It must **never edit
@@ -169,11 +181,11 @@ For each iteration, make a fresh `.devforge/iter-N/` directory, then:
 - **Oracle** (orchestrator, not a slot): run the project's tests/lint; redirect output
   to `iter-N/test-results.txt`. Produce the ground-truth diff:
   `git add -A && git diff --cached -U10 > iter-N/diff.patch` (then unstage if needed).
-- **Reviewers (parallel)** — dispatch **one subagent per entry in `reviewers`**,
-  concurrently, each on its `model`, each following its adapter, each **blind to
-  `claim.md` and to the other reviewers**. Each writes `iter-N/review-<use>.md` (first
-  line `VERDICT: PASS|FAIL`, severity-tagged findings). Default: `staff-review`
-  (correctness) **and** `thermonuclear` (maintainability).
+- **Reviewers (parallel)** — dispatch **one subagent per entry in `reviewers`**
+  concurrently (per *Slot dispatch*), each **blind to `claim.md` and to the other
+  reviewers**. Each writes `iter-N/review-<use>.md` (first line `VERDICT: PASS|FAIL`,
+  severity-tagged findings). Default: `staff-review` (correctness) **and**
+  `thermonuclear` (maintainability).
 - **Decide**: converged only when the oracle is green **and every finding across ALL
   `iter-N/review-*.md` is resolved** — fixed or carrying an explicit skip-justification,
   **nits included**. A `PASS` that still lists actionable findings is **not** done. Where
@@ -184,9 +196,9 @@ For each iteration, make a fresh `.devforge/iter-N/` directory, then:
   can't resolve — STOP and escalate. Append a line to `progress.md` each iteration.
 
 ### 5b. Final review  (after the inner loop converges)
-If `final_reviewers` is non-empty, dispatch **one subagent per entry**, in parallel,
-each on its `model`, each following its adapter, blind to `claim.md` and to each other,
-each writing `iter-N/final-review-<use>.md`. Default: `code-review`.
+If `final_reviewers` is non-empty, dispatch **one subagent per entry** in parallel (per
+*Slot dispatch*), blind to `claim.md` and to each other, each writing
+`iter-N/final-review-<use>.md`. Default: `code-review`.
 - **If any final review has actionable findings**, they reopen the inner loop: run a
   fresh implement → oracle → reviewers iteration to resolve them, then re-run the final
   reviewers. This reopen-cycle is bounded by `final_review_rounds` (default 2); exceeding

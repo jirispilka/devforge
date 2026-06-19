@@ -11,9 +11,9 @@ argument-hint: ""
 You are recording a **human's** approval to merge so push / PR-create can proceed.
 
 1. Summarize the evidence the human is approving: read `.devforge/progress.md` and
-   the latest `.devforge/iter-*/review.md` if present. Give a 3–5 line summary —
-   what changed, the test/oracle status, and the reviewer's verdict.
-2. If tests are not green, or the latest reviewer verdict is FAIL, **warn the user
+   the latest `.devforge/iter-*/review-*.md` + `final-review-*.md` if present. Give a
+   3–5 line summary — what changed, the test/oracle status, and each reviewer's verdict.
+2. If tests are not green, or any reviewer verdict is FAIL, **warn the user
    explicitly** and ask them to confirm they still want to approve before continuing.
 3. Write the approval marker so the /devforge loop will proceed to push/merge:
    ```bash
