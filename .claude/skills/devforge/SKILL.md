@@ -79,8 +79,10 @@ to its peers.
   - If `.devforge/config.local.json` exists, **shallow-merge** it over `config.json`
     (per-slot overrides win) — use it, don't rewrite `config.json`.
   - **Resolve the registry (base + repo deltas):** load the **base registry** shipped beside
-    this skill at `registry.base.json` — its `uses` engine paths resolve relative to the
-    devforge **install**. If the current repo has `.devforge/registry.json`, **shallow-merge
+    this skill at `registry.base.json` — its `uses` engine paths are **relative to this
+    skill's own directory** (e.g. `../_vendored/...`), so they resolve whether devforge runs
+    from its repo, attached on web, or installed as a plugin. If the current repo has
+    `.devforge/registry.json`, **shallow-merge
     its `uses` over the base** (repo wins on name collision; `slot_roles` always comes from the
     base; non-`uses` keys such as `$comment` are ignored). A repo `use`'s engine path resolves
     relative to the **repo root**. A repo with no `registry.json` runs on the base alone.
@@ -102,8 +104,8 @@ To run slot **S** with value
 
 1. Resolve `role = registry.slot_roles[S]`, and `engine = registry.uses[U].engine`,
    `scope = registry.uses[U].scope` (against the **resolved** registry). `engine` resolves
-   relative to the devforge **install** for a base `use`, or relative to the **repo root** for
-   a `use` that came from the repo's `.devforge/registry.json`.
+   relative to **this skill's directory** for a base `use` (e.g. `../_vendored/...`), or
+   relative to the **repo root** for a `use` that came from the repo's `.devforge/registry.json`.
 2. Dispatch a **subagent on model M** whose entire instruction is the filled template:
 
    > You are filling devforge's **{role}** slot. Communicate only through `.devforge/`
