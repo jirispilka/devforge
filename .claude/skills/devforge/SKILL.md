@@ -96,7 +96,8 @@ to its peers.
 ### Slot dispatch (one universal contract)
 
 There are **no per-skill adapter files** — every slot runs through this one contract,
-parameterized by data in `.devforge/registry.json`. To run slot **S** with value
+parameterized by data in the resolved registry (base + any repo `.devforge/registry.json`).
+To run slot **S** with value
 `{ "use": U, "model": M }`:
 
 1. Resolve `role = registry.slot_roles[S]`, and `engine = registry.uses[U].engine`,

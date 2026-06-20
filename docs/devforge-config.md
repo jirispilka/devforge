@@ -6,11 +6,13 @@ and writes; what *fills* it — which vendored skill, on which model — is conf
 without any change to the orchestrator. The **oracle** (your project's tests/lint) is the
 deterministic ground truth and is **not** a slot.
 
-Every engine is **vendored in this repo** (`.claude/skills/_vendored/`) and driven by a
-single universal dispatch contract in the orchestrator — there are no per-skill adapter
-files. Each `use` maps (in `.devforge/registry.json`) to the roles it can fill, its
-vendored engine path, and a one-line scope note; the orchestrator fills one template
-from that. Nothing needs installing — see [`VENDORED.md`](../VENDORED.md).
+The generic engines are **vendored in this repo** (`.claude/skills/_vendored/`) and driven
+by a single universal dispatch contract in the orchestrator — there are no per-skill adapter
+files. Each `use` maps to the roles it can fill, its engine path, and a one-line scope note;
+the orchestrator fills one template from that. That mapping is a **base registry**
+(`registry.base.json`, shipped beside the skill) that a target repo can extend with its own
+`.devforge/registry.json` — see [Base + repo registries](#base--repo-registries). Nothing
+needs installing — see [`VENDORED.md`](../VENDORED.md).
 
 ## The slots
 
@@ -35,8 +37,10 @@ from that. Nothing needs installing — see [`VENDORED.md`](../VENDORED.md).
 - **`code-review`** — multi-agent bug / CLAUDE.md / git-history pass with confidence
   scoring (retargeted from a PR to the iteration diff).
 
-To add an option, vendor its engine and add a row to `.devforge/registry.json`
-(`use` → roles + engine + scope). No new skill file needed.
+To add a generic option, vendor its engine and add a row to the base registry
+(`registry.base.json`); for a repo-specific engine, add it to that repo's own
+`.devforge/registry.json` instead (see [Base + repo registries](#base--repo-registries)).
+Either way it's a `use` → roles + engine + scope row — no new skill file needed.
 
 Each reviewer runs as an independent subagent, **blind to `claim.md` and to the other
 reviewers**, so the lenses stay genuinely independent.
@@ -192,8 +196,8 @@ No devforge change is needed to add a domain engine — only these two files in 
 - `.devforge/config.local.json` (gitignored) **shallow-merges** over it for
   per-environment tweaks — e.g. pointing a slot at a locally-installed skill instead of
   the vendored copy. This is the **only** place an installed plugin may be referenced.
-- On every run the orchestrator validates the resolved config against
-  `.devforge/registry.json`: every slot present; each `use` allowed in its slot; no
-  duplicate `use` within a list. An invalid config **stops the run** with the exact
-  error and the allowed list. `scripts/validate_config.py` encodes the same rules for
-  CI.
+- On every run the orchestrator validates the resolved config against the **resolved
+  registry** (base + any repo `.devforge/registry.json`): every slot present; each `use`
+  allowed in its slot; no duplicate `use` within a list. An invalid config **stops the run**
+  with the exact error and the allowed list. `scripts/validate_config.py` encodes the same
+  rules for CI.
