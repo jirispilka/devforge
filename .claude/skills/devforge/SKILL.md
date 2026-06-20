@@ -6,27 +6,14 @@ argument-hint: "<task description>"
 
 # devforge — gated loop orchestrator
 
-You are the **orchestrator** (the only conductor). You drive the phases and mediate
-all hand-offs **through files under `.devforge/`** — the implementer and reviewer
-never see each other's context. Two human gates stand between phases: you cannot edit
-source before the design is approved, and cannot push/merge before merge is approved.
+You are the **orchestrator**. Drive the loop through files under `.devforge/`; never let
+implementers and reviewers share hidden context. Two marker gates are mandatory:
+`design.approved` before source edits, `merge.approved` before push/merge/PR.
 
-> **Working files live in `.devforge/` at the repo root — never under `.claude/`.**
-> `.claude/skills/` is the tool (config); `.devforge/` is this run's data.
-
-> **Config-driven slots.** Each phase is a *slot* filled by a vendored engine named in
-> `.devforge/config.json`. devforge does not maintain one wrapper skill for each engine;
-> instead, the single *Slot dispatch* contract reads the **resolved registry** and invokes
-> the selected engine directly. The registry is the base file shipped beside this skill
-> (`registry.base.json`) shallow-merged with an optional `.devforge/registry.json` the
-> current repo may add. The default slots:
-> validate ← `brainstorming`, architect ←
-> `writing-plans`, implementer ← `feature-dev`, reviewers ← `staff-review` (parallel,
-> every iteration — kept lean so the loop is fast), final_reviewers ← `thermonuclear` +
-> `code-review` (parallel, after convergence). Every engine is **vendored in-repo**
-> (`.claude/skills/_vendored/`) —
-> nothing needs installing. See `docs/devforge-config.md` for the catalog. The oracle
-> (configured test/lint commands) is **not** a slot.
+`.claude/skills/` is the tool. `.devforge/` is run data. Slots are filled by vendored
+engines named in `.devforge/config.json`; the resolved registry (`registry.base.json` plus
+optional `.devforge/registry.json`) maps each `use` to an engine and scope. There is no
+separate wrapper skill per engine. The oracle is configured checks, not a slot.
 
 ## File contract (`.devforge/`)
 
@@ -53,10 +40,9 @@ source before the design is approved, and cannot push/merge before merge is appr
 `<use>` is the slot value's `use` name (e.g. `review-staff-review.md`,
 `review-thermonuclear.md`, `final-review-code-review.md`).
 
-**Independence rule:** every reviewer reads `task.md`, `design.md`, `iter-N/diff.patch`,
-`iter-N/test-results.txt` — **never `claim.md`, and never another reviewer's output.**
-Each judges reality against the approved spec, blind to the implementer's narrative and
-to its peers.
+**Reviewer independence:** reviewers read only `task.md`, `design.md`,
+`iter-N/diff.patch`, and `iter-N/test-results.txt`. Never give them `claim.md` or peer
+reviews.
 
 ## Procedure
 
@@ -76,20 +62,15 @@ to its peers.
   `{"phase":"validate","iteration":0,"head_sha":"<git rev-parse HEAD>"}`; start
   `.devforge/progress.md` with a header and a timestamped "loop started" line.
 - **Load + validate config (every start, fresh or resume):**
-  - If `.devforge/config.json` is absent, copy the shipped default from
-    `config.default.json` beside this skill. Validate configs against the shipped
-    `config.schema.json` beside this skill; do not copy the schema into `.devforge/`.
-    Tell the human the config was created and is editable.
+  - If `.devforge/config.json` is absent, copy `config.default.json` from this skill.
+    Validate against this skill's `config.schema.json`; do not copy the schema into
+    `.devforge/`. Tell the human the config was created.
   - If `.devforge/config.local.json` exists, **shallow-merge** it over `config.json`
     (per-slot overrides win) — use it, don't rewrite `config.json`.
-  - **Resolve the registry (base + repo deltas):** load the **base registry** shipped beside
-    this skill at `registry.base.json` — its `uses` engine paths are **relative to this
-    skill's own directory** (e.g. `../_vendored/...`), so they resolve whether devforge runs
-    from its repo, attached on web, or installed as a plugin. If the current repo has
-    `.devforge/registry.json`, **shallow-merge
-    its `uses` over the base** (repo wins on name collision; `slot_roles` always comes from the
-    base; non-`uses` keys such as `$comment` are ignored). A repo `use`'s engine path resolves
-    relative to the **repo root**. A repo with no `registry.json` runs on the base alone.
+  - Resolve the registry: load `registry.base.json`; shallow-merge
+    `.devforge/registry.json` `uses` if present. Base engine paths resolve relative to this
+    skill. Repo engine paths resolve relative to the repo root. `slot_roles` always comes
+    from the base; ignore non-`uses` repo keys.
   - **Validate** the resolved config against the **resolved (merged) registry** (the rules
     `scripts/validate_config.py` encodes): every slot present; each `use` exists and its
     slot's role (`registry.slot_roles[slot]`) is in that use's `roles`; no duplicate
@@ -102,9 +83,8 @@ to its peers.
 
 ### Slot dispatch (one universal contract)
 
-Every slot runs through this one contract. There is no separate wrapper skill such as
-`devforge-review-staff-review` or `devforge-impl-feature-dev`; the slot value chooses a
-registry entry, and that registry entry points at the engine instructions and scope.
+Every slot uses this contract. There is no separate wrapper skill such as
+`devforge-review-staff-review`; the slot value chooses a registry entry.
 To run slot **S** with value
 `{ "use": U, "model": M }`:
 
@@ -131,11 +111,8 @@ To run slot **S** with value
 
 `<use>` in a filename is the value's `use` name (e.g. `review-staff-review.md`).
 
-> **Approval auto-continues.** At each gate the human runs the human-only approval skill,
-> which records the marker and then **hands straight back to `/devforge`** — the loop
-> continues without the human re-invoking anything. Re-running `/devforge` also resumes
-> from `state.json` (the fallback if a run is ever interrupted); it never restarts a run
-> already in progress.
+> Human approval skills record the marker and invoke `/devforge` again; `/devforge`
+> resumes from `state.json` and never restarts an active run.
 
 ### 1. Validate — incl. claim & staleness check
 **Run the `validate` slot** (dispatch per *Slot dispatch* — default `brainstorming`).
@@ -180,24 +157,15 @@ Set `state.phase="design-gate"`.
 ### 4. DESIGN GATE  — STOP
 - **Self-enforce:** do **not** edit any source file until `.devforge/design.approved`
   exists. This gate is enforced by you following this skill — there are no hooks.
-- **Plan-mode front-end (when `plan_mode_gate` is true AND running interactively in the
-  CLI) — preferred, because reviewing raw markdown is hard:** show `design.md` in the
-  native plan UI so the human gets a rendered, scrollable plan with approve/reject
-  buttons. The design *is* the plan. Mechanics — `ExitPlanMode` only works **inside**
-  plan mode, so you must enter it first:
+- **Plan-mode gate** (preferred when `plan_mode_gate=true` and CLI tools are available):
   1. Call **`EnterPlanMode`** (the human consents to entering plan mode).
-  2. **Mirror** the full contents of `.devforge/design.md` into the plan file named in
-     the plan-mode system message (copy it verbatim — this is NOT editing the design,
-     just rendering it; `design.md` remains the source of truth).
-  3. Call **`ExitPlanMode`** — the human reviews the rendered design and approves or
-     rejects natively.
-  4. **On approval:** write `.devforge/design.approved` yourself and continue the loop.
-     **On rejection / change requests:** re-run the **architect slot** to revise
-     `design.md` (never hand-edit it yourself — see Rules), then re-present from step 1.
-- **Otherwise** (`plan_mode_gate` false, or running on web/headless, or resuming, or if
-  `EnterPlanMode`/`ExitPlanMode` is unavailable): tell the human to review
-  `.devforge/design.md`, then run **`/devforge-approve-design`** — it records the marker
-  and continues automatically. Then stop and wait.
+  2. Copy `.devforge/design.md` verbatim into the plan file. This renders the design; it
+     does not edit the source artifact.
+  3. Call **`ExitPlanMode`**.
+  4. On approval, write `.devforge/design.approved` and continue. On rejection, re-run the
+     architect slot; never hand-edit `design.md`.
+- Otherwise: tell the human to review `.devforge/design.md` and run
+  **`/devforge-approve-design`**. Then stop.
 - (Fallback) if interrupted, re-running `/devforge` resumes via step 0 once
   `.devforge/design.approved` exists.
 
@@ -206,71 +174,39 @@ For each iteration, make a fresh `.devforge/iter-N/` directory, then:
 - **Implement** — run the `implementer` slot (default `feature-dev`, dispatched per
   *Slot dispatch*) on `slots.implementer.model`. It applies `design.md` and
   **addresses every finding from all of the prior iteration's `review-*.md` /
-  `final-review-*.md` — blockers AND nits** (smallest proportionate fix; skip only with a
-  specific recorded reason — "out of scope" alone is not a reason). It must **never edit
-  or delete tests to pass**, and writes `iter-N/claim.md`.
+  `final-review-*.md` — blockers and nits. Skip only with a specific reason; "out of
+  scope" alone is not enough. Never edit/delete tests to pass. Write `iter-N/claim.md`.
 - **Oracle** (orchestrator, not a slot): run each command in `oracle.commands`, in order,
-  redirecting all output to `iter-N/test-results.txt`. If `oracle.commands` is empty,
-  infer the smallest credible project check from the repo (for example an existing
-  `npm test`, `pytest`, or documented lint/test command), record the inferred command in
-  `progress.md`, and run it. Prefer deterministic, non-mutating commands: type checks,
-  lint checks, build checks, unit tests, and targeted integration tests when the change
-  touches that surface. Do not use long-running dev/watch/server commands or mutating
-  fixer/formatter commands as the oracle (`dev`, `start`, `watch`, `lint:fix`, `format`,
-  `clean`, inspectors, and eval workflows are usually not oracle commands). If no
-  credible command exists, write that explicitly to `test-results.txt` and treat the
-  oracle as not green.
+  appending output to `iter-N/test-results.txt`. If empty, record and run the smallest
+  credible inferred fallback. Prefer deterministic, non-mutating commands: type, lint,
+  build, unit, and targeted integration checks. Avoid `dev`, `start`, `watch`, `lint:fix`,
+  `format`, `clean`, inspectors, and eval workflows. If no credible command exists, write
+  that to `test-results.txt` and treat the oracle as not green.
 - **Diff isolation** (orchestrator): before staging anything, record the implementation
   baseline from `state.head_sha` and inspect `git status --porcelain`. If there are
-  pre-existing unrelated changes, STOP and ask the human whether to include, stash, or
-  move them aside; never silently include them. Produce `iter-N/diff.patch` from only the
-  approved run's changes, using the current working tree diff against the recorded
-  baseline with enough context for review. Do not leave unrelated staged files behind.
+  pre-existing unrelated changes, STOP for human direction. Produce `iter-N/diff.patch`
+  only from the approved run's changes. Do not leave unrelated staged files behind.
 - **Reviewers (parallel)** — dispatch **one subagent per entry in `reviewers`**
-  concurrently (per *Slot dispatch*), each **blind to `claim.md` and to the other
-  reviewers**. Each writes `iter-N/review-<use>.md` (first line `VERDICT: PASS|FAIL` —
-  `PASS` only with **zero findings of any severity, nits included**; otherwise `FAIL`).
-  Default: `staff-review` (correctness) only — the per-iteration set is kept lean for
-  speed; maintainability (`thermonuclear`) runs once at final review (5b).
+  concurrently (per *Slot dispatch*), blind to `claim.md` and peer reviews. Each writes
+  `iter-N/review-<use>.md`. `PASS` means zero findings, including nits.
 - **Decide**: converged only when the oracle is green **and every finding across ALL
-  `iter-N/review-*.md` is resolved** — fixed or carrying an explicit skip-justification,
-  **nits included**. Because a reviewer emits `FAIL` whenever any finding remains, a
-  `PASS` is a genuine all-clear; you (the orchestrator, the only one who sees `claim.md`)
-  may converge over a `FAIL` **only** by recording a specific, sound skip-justification
-  for each remaining finding. Where two reviewers conflict (e.g. a structural restructure
-  vs a minimal-diff preference), pick the resolution and record the reconciliation for
-  the next `claim.md`. If the oracle is red or findings remain, feed the reviews into
-  iteration N+1. After `inner_iterations` (default 3) without converging — or a genuine
-  blocker the design can't resolve — STOP and escalate. Append a line to `progress.md`
-  each iteration.
+  `iter-N/review-*.md` is resolved: fixed or explicitly skipped. You may converge over a
+  `FAIL` only after recording a sound skip reason for every remaining finding. Reconcile
+  conflicting reviews in the next `claim.md`. If not converged, iterate. After
+  `inner_iterations` or a real design blocker, STOP and escalate.
 
 ### 5b. Final review  (after the inner loop converges)
-If `final_reviewers` is non-empty, dispatch **one subagent per entry** in parallel (per
-*Slot dispatch*), blind to `claim.md` and to each other, each writing
-`iter-N/final-review-<use>.md` (same verdict rule: `PASS` only with zero findings of any
-severity). Default: `thermonuclear` (maintainability) **and** `code-review` (bug/quality
-pass) — these heavier reviews run once here rather than every iteration, so the inner
-loop stays fast.
-- **If any final review has actionable findings**, they reopen the inner loop: run a
-  fresh implement → oracle → reviewers iteration to resolve them, then re-run the final
-  reviewers. This reopen-cycle is bounded by `final_review_rounds` (default 2); exceeding
-  it STOPs and escalates.
-- **If a final review flags a divergence between `design.md` and the implemented code**
-  (the design drifted from what was built), do **not** edit `design.md` to match. Surface
-  it to the human at the pre-merge gate with both options (update the design, or change
-  the code) and let them decide — see Rules.
-- **When all final reviews are clean** (or `final_reviewers` is empty), proceed to the
-  pre-merge gate.
+If `final_reviewers` is non-empty, dispatch them in parallel, blind to `claim.md` and
+peers. They write `iter-N/final-review-<use>.md`; `PASS` again means zero findings.
+Actionable findings reopen the inner loop, bounded by `final_review_rounds`. If a final
+review finds implementation/design drift, surface it at the pre-merge gate; do not edit
+`design.md` yourself. When final reviews are clean, proceed.
 
 ### 6. PRE-MERGE GATE — STOP
-- **Self-enforce:** do not push / merge / open a PR until `.devforge/merge.approved`
-  exists. Summarize the evidence for the human — the change, the oracle status, and
-  confirm **every finding from all reviewers (per-iteration AND final) is resolved**
-  (fixed or justified-skip, nits included; no "noted but unhandled"). Present the diff
-  clearly: a `git diff --stat` summary plus the actual hunks, so the human reviews the
-  real change. Then tell them the exact next step: review `.devforge/`, then run
-  **`/devforge-approve-merge`** — it records approval and continues to commit + PR
-  automatically. Then stop and wait.
+- Do not push / merge / open a PR until `.devforge/merge.approved` exists.
+- Summarize the change, oracle status, reviewer verdicts, and every fixed/skipped finding.
+- Show `git diff --stat` plus hunks. Tell the human to review `.devforge/` and run
+  **`/devforge-approve-merge`**. Then stop.
 - (Fallback) if interrupted, re-running `/devforge` resumes via step 0 once
   `.devforge/merge.approved` exists.
 
@@ -289,27 +225,17 @@ loop stays fast.
 
 ## Rules
 - Only write inside `.devforge/` until `design.approved` exists.
-- **The approved spec — `task.md`, `validation.md`, and `design.md` — is frozen, and
-  each is written ONLY by its owning slot** (`task.md` + `validation.md` by the validate
-  slot; `design.md` by the architect slot). Once approved (`task.md`/`validation.md` when
-  the loop proceeds past validate; `design.md` once `design.approved` exists), **never
-  hand-edit any of them** — not to fix a typo, not to reconcile a later finding, not for
-  any reason — without **explicit human confirmation**. In particular the **implementer
-  must never touch them**: the code conforms to the spec, never the spec to the code.
-  They are what the human reviewed at the gate; silently changing them lets the
-  implementer move the goalposts and breaks the gate. If a later review reveals the code
-  diverged from the approved design (or that the task/validation was wrong), surface the
-  divergence to the human and let them choose — update the artifact via its owning slot,
-  or change the code — do not pick for them by editing the doc. Mirroring `design.md`
-  into the plan file for the plan-mode gate is not an edit (it is a verbatim copy).
+- The approved spec is frozen: `task.md`/`validation.md` by validate, `design.md` by
+  architect. Do not hand-edit them after approval without explicit human confirmation.
+  If code/spec drift appears, ask the human whether to update the artifact via its owning
+  slot or change the code. Verbatim plan-mode mirroring is allowed.
 - Trust the oracle (`oracle.commands` or the recorded inferred fallback), not self-reports.
   Never weaken or delete tests.
 - **A reviewer's `VERDICT: PASS` means zero findings of any severity (nits included).**
   Any finding — blocker, major, minor, or nit — is `FAIL`. Never accept a `PASS` that
   still lists findings.
-- **Resolve every finding from every reviewer — per-iteration and final — before the
-  pre-merge gate, including nits.** Each is fixed or skipped with a specific recorded
-  reason; never carry an unhandled finding to the gate.
+- Resolve every reviewer finding before the pre-merge gate, including nits. Each is fixed
+  or skipped with a specific recorded reason.
 - Keep every reviewer blind to `claim.md` and to the other reviewers. Keep yourself the
   only component that sees every file.
 - Use only the slots in the validated config. Never substitute an installed plugin for a

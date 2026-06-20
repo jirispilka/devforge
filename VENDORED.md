@@ -1,21 +1,12 @@
 # Vendored engines
 
-devforge ships every slot engine **in this repository** so the loop runs with nothing
-installed (on a fresh clone and on claude.ai/code). Plugins are never required; they are
-only ever an optional `.devforge/config.local.json` override.
+devforge vendors every slot engine under `.claude/skills/_vendored/` so a fresh clone or
+claude.ai/code attachment works without installing other plugins. Engines stay unmodified;
+the registry supplies each engine path and devforge-specific scope.
 
-Each engine below is copied **verbatim** into `.claude/skills/_vendored/`. devforge's
-**single universal dispatch contract** (in the orchestrator) drives every engine scoped
-to devforge's file contract. The resolved registry stores each engine path and scope
-(`engine` + `scope`), so devforge does not need bespoke wrapper skills. The
-engines themselves are unmodified, so a re-sync is a clean diff.
-
-> **Why `ENGINE.md`, not `SKILL.md`.** A vendored skill named `SKILL.md` under
-> `.claude/skills/` would be auto-registered by Claude Code as an invocable skill —
-> colliding with an installed copy of the same name and letting the raw engine run
-> outside devforge's dispatch contract. Vendored engines are *reference text devforge
-> reads*, so they use a non-`SKILL.md` filename and never register. (`feature-dev.md` and
-> `code-review.md` were already non-`SKILL.md` upstream.)
+Vendored skills use `ENGINE.md` instead of `SKILL.md` so Claude Code does not auto-register
+them as standalone invocable skills. `feature-dev.md` and `code-review.md` keep their
+upstream non-`SKILL.md` filenames.
 
 | Vendored path | Slot value (`use`) | Upstream | Source path | Version | Adaptation (registry `scope`) |
 |---|---|---|---|---|---|

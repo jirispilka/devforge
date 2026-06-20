@@ -13,10 +13,6 @@ def test_default_config_matches_schema():
     jsonschema.validate(load_json(CONFIG), SCHEMA)
 
 
-def test_shipped_default_config_matches_schema():
-    jsonschema.validate(load_json(CONFIG), SCHEMA)
-
-
 def test_schema_rejects_unknown_slot_key():
     bad = load_json(CONFIG)
     bad["slots"]["bogus"] = {"use": "x"}

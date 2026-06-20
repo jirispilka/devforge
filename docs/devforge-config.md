@@ -1,19 +1,10 @@
 # devforge configuration
 
-devforge's phases are **slots**. A *slot* is a role defined only by the files it reads
-and writes; what *fills* it — which vendored engine, on which model — is config you set in
-`.devforge/config.json`. Swap a slot's `use` value and the loop runs a different engine
-without any change to the orchestrator. The **oracle** (`oracle.commands`, or an inferred
-fallback when the list is empty) is the deterministic ground truth and is **not** a slot.
+Slots are file contracts. Config chooses which vendored engine fills each slot and which
+model it runs on. The oracle is separate: `oracle.commands` defines deterministic checks.
 
-The generic engines are **vendored in this repo** (`.claude/skills/_vendored/`) and driven
-by a single universal dispatch contract in the orchestrator. There is no separate wrapper
-skill per engine; each `use` maps to the roles it can fill, its engine path, and a
-one-line scope note, and the orchestrator fills one template from that. That mapping is a
-**base registry**
-(`registry.base.json`, shipped beside the skill) that a target repo can extend with its own
-`.devforge/registry.json` — see [Base + repo registries](#base--repo-registries). Nothing
-needs installing — see [`VENDORED.md`](../VENDORED.md).
+The base registry (`registry.base.json`) ships with the skill. Repos can add
+`.devforge/registry.json` for domain engines. No wrapper skill is needed per engine.
 
 ## The slots
 
@@ -25,26 +16,16 @@ needs installing — see [`VENDORED.md`](../VENDORED.md).
 | `reviewers` (list) | every iteration, parallel | `diff.patch`, `test-results.txt`, spec | `review-<use>.md` each | **`staff-review`**, `thermonuclear`, `code-review` | sonnet |
 | `final_reviewers` (list) | after convergence, parallel | `diff.patch` + working tree, spec | `final-review-<use>.md` each | **`thermonuclear`** + **`code-review`**, `staff-review` | sonnet |
 
-### What each engine does
+Default engine focus:
 
-- **`brainstorming`** — clarifying-question discipline to pin down purpose/constraints
-  (devforge strips its spec-doc/gate steps; keeps the issue staleness check).
-- **`writing-plans`** — concrete, file-level plan → `design.md`.
-- **`feature-dev`** — codebase-aware implementation (driven implement-only against the
-  approved design).
-- **`staff-review`** — correctness / edge cases / test coverage.
-- **`thermonuclear`** — strict maintainability: abstraction quality, 1k-line file
-  ceiling, spaghetti-branch growth, "code-judo" simplification.
-- **`code-review`** — multi-agent bug / CLAUDE.md / git-history pass with confidence
-  scoring (retargeted from a PR to the iteration diff).
-
-To add a generic option, vendor its engine and add a row to the base registry
-(`registry.base.json`); for a repo-specific engine, add it to that repo's own
-`.devforge/registry.json` instead (see [Base + repo registries](#base--repo-registries)).
-Either way it's a `use` → roles + engine + scope row — no new skill file needed.
-
-Each reviewer runs as an independent subagent, **blind to `claim.md` and to the other
-reviewers**, so the lenses stay genuinely independent.
+| `use` | Focus |
+|---|---|
+| `brainstorming` | validate task and issue claims |
+| `writing-plans` | write `design.md` |
+| `feature-dev` | implement the approved design |
+| `staff-review` | correctness, edge cases, tests |
+| `thermonuclear` | maintainability and structure |
+| `code-review` | bug/quality pass with confidence scoring |
 
 ## Oracle, Limits & Gate
 
@@ -56,14 +37,8 @@ reviewers**, so the lenses stay genuinely independent.
 }
 ```
 
-- `oracle.commands` — ordered shell commands for the deterministic check, for example
-  `["npm test", "npm run lint"]` or `["python -m pytest"]`. An empty list means devforge
-  infers the smallest credible project check from repo conventions and records what it ran;
-  if it cannot infer one, the oracle is not green.
-- Use non-mutating, finite checks. Good oracle commands are type checks, lint checks,
-  format checks, builds, unit tests, and targeted integration tests. Avoid dev servers,
-  watch commands, cleanup commands, mutating fixers/formatters, inspectors, and eval
-  workflows unless the task explicitly requires them.
+- `oracle.commands` — ordered, finite, non-mutating checks. Empty means devforge infers
+  and records the smallest credible check; if it cannot, the oracle is not green.
 - `inner_iterations` — implement→oracle→reviewers rounds before escalating.
 - `final_review_rounds` — how many times a final review may reopen the inner loop.
 - `plan_mode_gate` — when true and running interactively in the CLI, the design gate
@@ -72,7 +47,7 @@ reviewers**, so the lenses stay genuinely independent.
   `ExitPlanMode`); otherwise (and always on web/headless) it falls back to
   `/devforge-approve-design`. The marker file is the source of truth either way.
 
-## Example configs
+## Default Config
 
 ### `default`
 ```json
@@ -95,36 +70,12 @@ reviewers**, so the lenses stay genuinely independent.
 }
 ```
 
-The per-iteration set is deliberately lean (correctness only) so the loop stays fast;
-the heavier maintainability/quality lenses (`thermonuclear`, `code-review`) run once at
-final review. Move a lens into `reviewers` if you want it on every iteration.
+Per-iteration review stays lean (`staff-review`). Heavier lenses run as final reviewers.
 
 ### Choosing oracle commands from `package.json`
 
-Given a script set like this:
-
-```json
-{
-  "start": "tsx src/dev_server.ts",
-  "dev": "node scripts/dev_standby.js",
-  "build": "pnpm run build:core && pnpm run build:web",
-  "build:core": "tsc -b src",
-  "build:web": "pnpm --filter @apify/mcp-web-widget run build",
-  "lint": "oxlint .",
-  "lint:fix": "oxlint . --fix",
-  "format": "oxfmt",
-  "format:check": "oxfmt --check",
-  "check:agents": "node scripts/check-agents-links.mjs",
-  "type-check": "tsc -p tsconfig.json --noEmit",
-  "check": "pnpm run type-check && pnpm run lint",
-  "check:widgets": "tsx scripts/check_widgets.ts",
-  "test": "pnpm run test:unit",
-  "test:unit": "vitest run tests/unit",
-  "test:integration": "pnpm run build && vitest run tests/integration"
-}
-```
-
-A good default oracle would be:
+For package scripts like `check`, `test:unit`, `build`, `check:widgets`, `check:agents`,
+`test:integration:*`, `dev`, `start`, `lint:fix`, and `format`, a good default is:
 
 ```json
 {
@@ -134,7 +85,7 @@ A good default oracle would be:
 }
 ```
 
-Add targeted commands when the task touches those surfaces:
+Add targeted checks when the task touches those surfaces:
 
 ```json
 {
@@ -149,81 +100,23 @@ Add targeted commands when the task touches those surfaces:
 }
 ```
 
-- Include `pnpm run build` when TypeScript project references, generated `dist`, bundled
-  web assets, or runtime entrypoints are affected.
-- Include `pnpm run check:widgets` when widget contracts or web widget files change.
-- Include `pnpm run check:agents` when agent/skill links or agent docs change.
-- Include a targeted integration test such as `pnpm run test:integration:stdio` only when
-  the implementation touches that integration path; full integration suites can be too
-  slow for every inner-loop iteration.
-- Do not use `start`, `dev`, `build:watch`, `lint:fix`, `format`, `clean`, inspector
-  scripts, or eval workflows as routine oracle commands. They are long-running, mutating,
-  cleanup-oriented, interactive, or too expensive for the normal loop.
-
-### `fast-cheap` — one reviewer, no final pass, fewer rounds
-```json
-{
-  "slots": {
-    "validate":    { "use": "brainstorming", "model": "haiku" },
-    "architect":   { "use": "writing-plans", "model": "sonnet" },
-    "implementer": { "use": "feature-dev",   "model": "sonnet" },
-    "reviewers": [
-      { "use": "staff-review", "model": "haiku" }
-    ],
-    "final_reviewers": []
-  },
-  "oracle": { "commands": [] },
-  "limits": { "inner_iterations": 2, "final_review_rounds": 0 },
-  "plan_mode_gate": true
-}
-```
-
-### `max-rigor` — all three lenses per iteration, on opus
-```json
-{
-  "slots": {
-    "validate":    { "use": "brainstorming", "model": "opus" },
-    "architect":   { "use": "writing-plans", "model": "opus" },
-    "implementer": { "use": "feature-dev",   "model": "opus" },
-    "reviewers": [
-      { "use": "staff-review",  "model": "opus" },
-      { "use": "thermonuclear", "model": "opus" },
-      { "use": "code-review",   "model": "opus" }
-    ],
-    "final_reviewers": [
-      { "use": "code-review", "model": "opus" }
-    ]
-  },
-  "oracle": { "commands": [] },
-  "limits": { "inner_iterations": 5, "final_review_rounds": 3 },
-  "plan_mode_gate": true
-}
-```
+- `pnpm run build`: TypeScript references, generated `dist`, web assets, runtime entrypoints.
+- `pnpm run check:widgets`: widget contracts or web widget files.
+- `pnpm run check:agents`: agent/skill links or docs.
+- `pnpm run test:integration:stdio`: only when that integration path changed.
+- Avoid routine use of `start`, `dev`, `build:watch`, `lint:fix`, `format`, `clean`,
+  inspectors, and eval workflows.
 
 ## Base + repo registries
 
-The registry is **layered**, just like the config:
-
-- The **base registry** ships beside the skill at `registry.base.json` — the generic engines
-  (`brainstorming`, `writing-plans`, `feature-dev`, `staff-review`, `thermonuclear`,
-  `code-review`). It travels with the install, so its engine paths resolve relative to the
-  devforge install.
-- A target repo may add `.devforge/registry.json` listing **only its own extra engines**.
-  devforge shallow-merges its `uses` over the base (the repo wins on a name collision;
-  `slot_roles` always comes from the base). A repo `use`'s engine path resolves relative to the
-  **repo root**. A repo with no `.devforge/registry.json` runs on the base alone.
-
-So "what engines exist here?" = base + this repo's deltas. To keep a small delta file from
-reading as the whole story, two things help:
-
-- a `$comment` key in the repo's `registry.json` (ignored by the merge) saying it is partial;
-- devforge logs the **fully-resolved registry** (every engine → resolved path) to
-  `.devforge/progress.md` at startup, so each run leaves a complete, concrete view.
+The base registry travels with the skill. A repo can add `.devforge/registry.json` with
+extra `uses`; repo uses shallow-override base uses by name. `slot_roles` always comes from
+the base. Base engine paths resolve relative to the skill; repo engine paths resolve
+relative to the repo root. devforge logs the fully resolved registry to `progress.md`.
 
 ### Recipe: add a domain engine in a target repo
 
-To plug a repo's own skill/agent into a slot — e.g. a planning skill at `.claude/skills/dig`
-and an end-to-end verifier at `.claude/agents/mcpc-tester.md`:
+Example repo registry:
 
 ```jsonc
 // <target-repo>/.devforge/registry.json   — committed in that repo, deltas only
@@ -244,9 +137,7 @@ and an end-to-end verifier at `.claude/agents/mcpc-tester.md`:
 }
 ```
 
-Then wire them in `<target-repo>/.devforge/config.json` — a `use` with both reviewer roles can
-sit in `reviewers` (probe every iteration), `final_reviewers` (one final probe), or both,
-depending on the feature:
+Then wire those `use` names in `.devforge/config.json`:
 
 ```jsonc
 {
@@ -265,7 +156,7 @@ depending on the feature:
 }
 ```
 
-No devforge change is needed to add a domain engine — only these two files in the target repo.
+No devforge code change is needed.
 
 ## Overrides & validation
 
