@@ -19,8 +19,8 @@ from that. Nothing needs installing — see [`VENDORED.md`](../VENDORED.md).
 | `validate` | once, first | the task / issue, codebase | `task.md`, `validation.md` | **`brainstorming`** | opus |
 | `architect` | once, after explore | `task.md`, `validation.md`, codebase | `design.md` | **`writing-plans`** | opus |
 | `implementer` | every iteration | `design.md`, prior reviews | source edits, `claim.md` | **`feature-dev`** | opus |
-| `reviewers` (list) | every iteration, parallel | `diff.patch`, `test-results.txt`, spec | `review-<use>.md` each | **`staff-review`** + **`thermonuclear`**, `code-review` | sonnet |
-| `final_reviewers` (list) | after convergence, parallel | `diff.patch` + working tree, spec | `final-review-<use>.md` each | **`code-review`**, `staff-review`, `thermonuclear` | sonnet |
+| `reviewers` (list) | every iteration, parallel | `diff.patch`, `test-results.txt`, spec | `review-<use>.md` each | **`staff-review`**, `thermonuclear`, `code-review` | sonnet |
+| `final_reviewers` (list) | after convergence, parallel | `diff.patch` + working tree, spec | `final-review-<use>.md` each | **`thermonuclear`** + **`code-review`**, `staff-review` | sonnet |
 
 ### What each engine does
 
@@ -50,9 +50,10 @@ reviewers**, so the lenses stay genuinely independent.
 - `inner_iterations` — implement→oracle→reviewers rounds before escalating.
 - `final_review_rounds` — how many times a final review may reopen the inner loop.
 - `plan_mode_gate` — when true and running interactively in the CLI, the design gate
-  uses Claude Code's plan-mode (`ExitPlanMode`) for native approval; otherwise (and
-  always on web) it falls back to `/devforge-approve-design`. The marker file is the
-  source of truth either way.
+  renders `design.md` in Claude Code's plan-mode for native approve/reject (the
+  orchestrator calls `EnterPlanMode`, mirrors the design into the plan file, then
+  `ExitPlanMode`); otherwise (and always on web/headless) it falls back to
+  `/devforge-approve-design`. The marker file is the source of truth either way.
 
 ## Example configs
 
@@ -64,10 +65,10 @@ reviewers**, so the lenses stay genuinely independent.
     "architect":   { "use": "writing-plans", "model": "opus" },
     "implementer": { "use": "feature-dev",   "model": "opus" },
     "reviewers": [
-      { "use": "staff-review",  "model": "sonnet" },
-      { "use": "thermonuclear", "model": "sonnet" }
+      { "use": "staff-review",  "model": "sonnet" }
     ],
     "final_reviewers": [
+      { "use": "thermonuclear", "model": "sonnet" },
       { "use": "code-review",   "model": "sonnet" }
     ]
   },
@@ -75,6 +76,10 @@ reviewers**, so the lenses stay genuinely independent.
   "plan_mode_gate": true
 }
 ```
+
+The per-iteration set is deliberately lean (correctness only) so the loop stays fast;
+the heavier maintainability/quality lenses (`thermonuclear`, `code-review`) run once at
+final review. Move a lens into `reviewers` if you want it on every iteration.
 
 ### `fast-cheap` — one reviewer, no final pass, fewer rounds
 ```json

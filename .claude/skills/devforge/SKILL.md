@@ -18,9 +18,10 @@ source before the design is approved, and cannot push/merge before merge is appr
 > `.devforge/config.json`. There are **no per-skill adapters** — one universal dispatch
 > contract (see *Slot dispatch*) drives every engine, parameterized by
 > `.devforge/registry.json`. The default slots: validate ← `brainstorming`, architect ←
-> `writing-plans`, implementer ← `feature-dev`, reviewers ← `staff-review` +
-> `thermonuclear` (parallel, every iteration), final_reviewers ← `code-review` (after
-> convergence). Every engine is **vendored in-repo** (`.claude/skills/_vendored/`) —
+> `writing-plans`, implementer ← `feature-dev`, reviewers ← `staff-review` (parallel,
+> every iteration — kept lean so the loop is fast), final_reviewers ← `thermonuclear` +
+> `code-review` (parallel, after convergence). Every engine is **vendored in-repo**
+> (`.claude/skills/_vendored/`) —
 > nothing needs installing. See `docs/devforge-config.md` for the catalog. The oracle
 > (tests/lint) is **not** a slot.
 
@@ -104,9 +105,9 @@ parameterized by data in `.devforge/registry.json`. To run slot **S** with value
 |------|-------|-------------|--------|--------|
 | `validate` | the `<task>`/issue, codebase, `gh` | — | `task.md` + `validation.md` | claim ledger + one-line verdict |
 | `architect` | `task.md`, `validation.md`, codebase | — | `design.md` | approach · files to change · test strategy (oracle) · risks |
-| `implementer` | `design.md`, all prior `iter-*/review-*.md` + `final-review-*.md` | — | source edits + `iter-N/claim.md` | what done / skipped + specific reason / evidence — **never edit or delete tests** |
-| `reviewer` | `task.md`, `design.md`, `iter-N/diff.patch`, `iter-N/test-results.txt` | `claim.md`, peer reviewers' output | `iter-N/review-<use>.md` | first line `VERDICT: PASS\|FAIL`, then severity-tagged findings (blocker/major/minor/nit) |
-| `final_reviewer` | `task.md`, `design.md`, `iter-N/diff.patch`, working tree | `claim.md`, peer reviewers' output | `iter-N/final-review-<use>.md` | first line `VERDICT: PASS\|FAIL`, then severity-tagged findings |
+| `implementer` | `design.md`, all prior `iter-*/review-*.md` + `final-review-*.md` | — | source edits + `iter-N/claim.md` | what done / skipped + specific reason / evidence — **never edit or delete tests, and never edit the spec (`task.md` / `validation.md` / `design.md`)** |
+| `reviewer` | `task.md`, `design.md`, `iter-N/diff.patch`, `iter-N/test-results.txt` | `claim.md`, peer reviewers' output | `iter-N/review-<use>.md` | first line `VERDICT: PASS\|FAIL`, then severity-tagged findings (blocker/major/minor/nit). **`PASS` only if there are ZERO findings of ANY severity — a single nit means `FAIL`. Never PASS with findings listed.** |
+| `final_reviewer` | `task.md`, `design.md`, `iter-N/diff.patch`, working tree | `claim.md`, peer reviewers' output | `iter-N/final-review-<use>.md` | first line `VERDICT: PASS\|FAIL`, then severity-tagged findings. **`PASS` only if there are ZERO findings of ANY severity (nit included); otherwise `FAIL`.** |
 
 `<use>` in a filename is the value's `use` name (e.g. `review-staff-review.md`).
 
@@ -160,13 +161,23 @@ Set `state.phase="design-gate"`.
 - **Self-enforce:** do **not** edit any source file until `.devforge/design.approved`
   exists. This gate is enforced by you following this skill — there are no hooks.
 - **Plan-mode front-end (when `plan_mode_gate` is true AND running interactively in the
-  CLI):** present `design.md` to the human via `ExitPlanMode` (the design *is* the
-  plan). On approval, write `.devforge/design.approved` yourself and continue the loop.
-  This gives the native approve/reject UX while keeping the marker file as the source of
-  truth.
-- **Otherwise** (`plan_mode_gate` false, or running on web/headless, or resuming): tell
-  the human to review `.devforge/design.md`, then run **`/devforge-approve-design`** — it
-  records the marker and continues automatically. Then stop and wait.
+  CLI) — preferred, because reviewing raw markdown is hard:** show `design.md` in the
+  native plan UI so the human gets a rendered, scrollable plan with approve/reject
+  buttons. The design *is* the plan. Mechanics — `ExitPlanMode` only works **inside**
+  plan mode, so you must enter it first:
+  1. Call **`EnterPlanMode`** (the human consents to entering plan mode).
+  2. **Mirror** the full contents of `.devforge/design.md` into the plan file named in
+     the plan-mode system message (copy it verbatim — this is NOT editing the design,
+     just rendering it; `design.md` remains the source of truth).
+  3. Call **`ExitPlanMode`** — the human reviews the rendered design and approves or
+     rejects natively.
+  4. **On approval:** write `.devforge/design.approved` yourself and continue the loop.
+     **On rejection / change requests:** re-run the **architect slot** to revise
+     `design.md` (never hand-edit it yourself — see Rules), then re-present from step 1.
+- **Otherwise** (`plan_mode_gate` false, or running on web/headless, or resuming, or if
+  `EnterPlanMode`/`ExitPlanMode` is unavailable): tell the human to review
+  `.devforge/design.md`, then run **`/devforge-approve-design`** — it records the marker
+  and continues automatically. Then stop and wait.
 - (Fallback) if interrupted, re-running `/devforge` resumes via step 0 once
   `.devforge/design.approved` exists.
 
@@ -183,26 +194,37 @@ For each iteration, make a fresh `.devforge/iter-N/` directory, then:
   `git add -A && git diff --cached -U10 > iter-N/diff.patch` (then unstage if needed).
 - **Reviewers (parallel)** — dispatch **one subagent per entry in `reviewers`**
   concurrently (per *Slot dispatch*), each **blind to `claim.md` and to the other
-  reviewers**. Each writes `iter-N/review-<use>.md` (first line `VERDICT: PASS|FAIL`,
-  severity-tagged findings). Default: `staff-review` (correctness) **and**
-  `thermonuclear` (maintainability).
+  reviewers**. Each writes `iter-N/review-<use>.md` (first line `VERDICT: PASS|FAIL` —
+  `PASS` only with **zero findings of any severity, nits included**; otherwise `FAIL`).
+  Default: `staff-review` (correctness) only — the per-iteration set is kept lean for
+  speed; maintainability (`thermonuclear`) runs once at final review (5b).
 - **Decide**: converged only when the oracle is green **and every finding across ALL
   `iter-N/review-*.md` is resolved** — fixed or carrying an explicit skip-justification,
-  **nits included**. A `PASS` that still lists actionable findings is **not** done. Where
-  two reviewers conflict (e.g. a structural restructure vs a minimal-diff preference),
-  pick the resolution and record the reconciliation for the next `claim.md`. If the
-  oracle is red or findings remain, feed the reviews into iteration N+1. After
-  `inner_iterations` (default 3) without converging — or a genuine blocker the design
-  can't resolve — STOP and escalate. Append a line to `progress.md` each iteration.
+  **nits included**. Because a reviewer emits `FAIL` whenever any finding remains, a
+  `PASS` is a genuine all-clear; you (the orchestrator, the only one who sees `claim.md`)
+  may converge over a `FAIL` **only** by recording a specific, sound skip-justification
+  for each remaining finding. Where two reviewers conflict (e.g. a structural restructure
+  vs a minimal-diff preference), pick the resolution and record the reconciliation for
+  the next `claim.md`. If the oracle is red or findings remain, feed the reviews into
+  iteration N+1. After `inner_iterations` (default 3) without converging — or a genuine
+  blocker the design can't resolve — STOP and escalate. Append a line to `progress.md`
+  each iteration.
 
 ### 5b. Final review  (after the inner loop converges)
 If `final_reviewers` is non-empty, dispatch **one subagent per entry** in parallel (per
 *Slot dispatch*), blind to `claim.md` and to each other, each writing
-`iter-N/final-review-<use>.md`. Default: `code-review`.
+`iter-N/final-review-<use>.md` (same verdict rule: `PASS` only with zero findings of any
+severity). Default: `thermonuclear` (maintainability) **and** `code-review` (bug/quality
+pass) — these heavier reviews run once here rather than every iteration, so the inner
+loop stays fast.
 - **If any final review has actionable findings**, they reopen the inner loop: run a
   fresh implement → oracle → reviewers iteration to resolve them, then re-run the final
   reviewers. This reopen-cycle is bounded by `final_review_rounds` (default 2); exceeding
   it STOPs and escalates.
+- **If a final review flags a divergence between `design.md` and the implemented code**
+  (the design drifted from what was built), do **not** edit `design.md` to match. Surface
+  it to the human at the pre-merge gate with both options (update the design, or change
+  the code) and let them decide — see Rules.
 - **When all final reviews are clean** (or `final_reviewers` is empty), proceed to the
   pre-merge gate.
 
@@ -223,7 +245,23 @@ Commit, then push / open a PR as appropriate. Record the outcome in `progress.md
 
 ## Rules
 - Only write inside `.devforge/` until `design.approved` exists.
+- **The approved spec — `task.md`, `validation.md`, and `design.md` — is frozen, and
+  each is written ONLY by its owning slot** (`task.md` + `validation.md` by the validate
+  slot; `design.md` by the architect slot). Once approved (`task.md`/`validation.md` when
+  the loop proceeds past validate; `design.md` once `design.approved` exists), **never
+  hand-edit any of them** — not to fix a typo, not to reconcile a later finding, not for
+  any reason — without **explicit human confirmation**. In particular the **implementer
+  must never touch them**: the code conforms to the spec, never the spec to the code.
+  They are what the human reviewed at the gate; silently changing them lets the
+  implementer move the goalposts and breaks the gate. If a later review reveals the code
+  diverged from the approved design (or that the task/validation was wrong), surface the
+  divergence to the human and let them choose — update the artifact via its owning slot,
+  or change the code — do not pick for them by editing the doc. Mirroring `design.md`
+  into the plan file for the plan-mode gate is not an edit (it is a verbatim copy).
 - Trust the oracle (tests/lint), not self-reports. Never weaken or delete tests.
+- **A reviewer's `VERDICT: PASS` means zero findings of any severity (nits included).**
+  Any finding — blocker, major, minor, or nit — is `FAIL`. Never accept a `PASS` that
+  still lists findings.
 - **Resolve every finding from every reviewer — per-iteration and final — before the
   pre-merge gate, including nits.** Each is fixed or skipped with a specific recorded
   reason; never carry an unhandled finding to the gate.
