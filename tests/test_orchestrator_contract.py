@@ -1,11 +1,18 @@
 from conftest import REPO_ROOT
 
 ORCH = (REPO_ROOT / ".claude/skills/devforge/SKILL.md").read_text()
+APPROVE_DESIGN = (
+    REPO_ROOT / ".claude/skills/devforge-approve-design/SKILL.md"
+).read_text()
 
 
 def test_orchestrator_reads_config_and_registry():
     assert "config.json" in ORCH
     assert "registry.json" in ORCH
+
+
+def test_orchestrator_skill_stays_compact():
+    assert len(ORCH.splitlines()) <= 250
 
 
 def test_orchestrator_documents_per_reviewer_files():
@@ -33,10 +40,38 @@ def test_orchestrator_has_triage_phase_before_design():
     assert ORCH.index("### 2. TRIAGE GATE") < ORCH.index("### 5. Architect")
 
 
+def test_orchestrator_persists_raw_request_before_triage():
+    assert "request.md" in ORCH
+    assert "Write it verbatim to" in ORCH
+    assert ORCH.index("request.md") < ORCH.index("### 1. Triage")
+    assert "`validate` | `request.md`, `triage.md`" in ORCH
+
+
 def test_orchestrator_selects_review_panel_at_design_gate():
     # Configured reviewer lists are a roster; the design gate picks the per-run panel.
     assert "state.panel" in ORCH
+    assert "panel.json" in ORCH
     assert "subset of the configured roster" in ORCH
+
+
+def test_approve_design_records_the_approved_panel():
+    assert "panel.json" in APPROVE_DESIGN
+    assert 'state["panel"] = panel' in APPROVE_DESIGN
+    assert 'state["phase"] = "inner-loop"' in APPROVE_DESIGN
+    assert 'state["iteration"] = 1' in APPROVE_DESIGN
+
+
+def test_orchestrator_tracks_resumable_post_design_phases():
+    for phase in ("inner-loop", "final-review", "final-reopen", "pre-merge-gate"):
+        assert phase in ORCH
+    assert 'state.phase="pre-merge-gate"' in ORCH
+
+
+def test_implementer_reads_validated_spec_not_only_design():
+    assert (
+        "| `implementer` | `task.md`, `validation.md`, `design.md`"
+        in ORCH
+    )
 
 
 def test_orchestrator_has_complexity_rubric_with_numbers():
@@ -58,8 +93,8 @@ def test_orchestrator_dispatches_reviewers_in_parallel():
 
 def test_orchestrator_uses_universal_dispatch_not_wrapper_skills():
     # The simplification: one contract driven by the registry, no wrapper skill per engine.
-    assert "Slot dispatch" in ORCH
-    assert "registry.slot_roles" in ORCH and "registry.uses" in ORCH
+    assert "Stage dispatch" in ORCH
+    assert "registry.stage_roles" in ORCH and "registry.uses" in ORCH
     assert "separate wrapper skill" in ORCH
 
 

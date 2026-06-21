@@ -1,30 +1,42 @@
 ---
 name: devforge-approve-design
-description: HUMAN-ONLY design-gate approval for the devforge loop. Run this after reviewing .devforge/design.md to unlock implementation — it writes .devforge/design.approved, which the /devforge loop requires before it will edit any source. The agent cannot invoke this; only a human can approve.
+description: HUMAN-ONLY design-gate approval for devforge. Run after reviewing .devforge/design.md and .devforge/panel.json; records the panel in state.json, writes .devforge/design.approved, and hands back to /devforge. The agent cannot invoke this.
 disable-model-invocation: true
 allowed-tools: Read, Bash, Skill
 argument-hint: ""
 ---
 
-# Approve design (human-only gate)
+# Approve design
 
-You are recording a **human's** approval of the design so implementation can begin.
-This is the only thing that opens the design gate; the agent cannot reach it.
+Record human approval of the design and review panel so implementation may begin.
 
-1. Read `.devforge/design.md`. If it does not exist, STOP and tell the user there
-   is no design to approve yet.
-2. Give the user a 3–5 line summary of what they are approving (the core approach and
-   the planned changes) so the approval is informed.
-3. Write the approval marker so the /devforge loop will proceed to implementation:
+1. Read `.devforge/design.md` and `.devforge/panel.json`; stop if either is missing.
+2. Summarize the approach, planned changes, reviewers, final reviewers, limits, and panel
+   reason in 3-5 lines.
+3. Copy the approved panel into `state.json`:
+   ```bash
+   python3 - <<'PY'
+   import json
+   from pathlib import Path
+   state_path = Path(".devforge/state.json")
+   panel = json.loads(Path(".devforge/panel.json").read_text())
+   for key in ("reviewers", "final_reviewers", "inner_iterations", "final_review_rounds"):
+       if key not in panel:
+           raise SystemExit(f"panel.json missing required key: {key}")
+   state = json.loads(state_path.read_text()) if state_path.exists() else {}
+   state["panel"] = panel
+   state["phase"] = "inner-loop"
+   state["iteration"] = 1
+   state_path.write_text(json.dumps(state, indent=2, sort_keys=True) + "\n")
+   PY
+   ```
+4. Write the marker:
    ```bash
    mkdir -p .devforge
    printf 'approved_at=%s\napproved_commit=%s\nnote=design approved by human via /devforge-approve-design\n' \
      "$(date -u +%Y-%m-%dT%H:%M:%SZ)" "$(git rev-parse HEAD 2>/dev/null || echo none)" \
      > .devforge/design.approved
    ```
-4. Briefly confirm the approval is recorded, then **continue automatically**: invoke the
-   `devforge` skill (`/devforge`). It resumes from `.devforge/state.json` straight
-   into implementation — do not stop to ask the user to re-run anything.
+5. Confirm briefly, then invoke `/devforge` so it resumes into implementation.
 
-Do NOT edit source files *in this skill*. You only record approval and then hand off to
-`devforge`, which does the implementation under its own (unrestricted) context.
+Do not edit source here.

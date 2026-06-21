@@ -8,7 +8,7 @@
 .devforge/config.json
 .devforge/config.schema.json
 
-# Per-environment slot overrides (e.g. pointing a slot at a locally-installed skill).
+# Per-environment stage overrides (e.g. pointing a stage at a locally-installed skill).
 .devforge/config.local.json
 
 # Editor / OS noise

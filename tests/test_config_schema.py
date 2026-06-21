@@ -15,21 +15,21 @@ def test_default_config_matches_schema():
 
 def test_schema_rejects_unknown_slot_key():
     bad = load_json(CONFIG)
-    bad["slots"]["bogus"] = {"use": "x"}
+    bad["stages"]["bogus"] = {"use": "x"}
     with pytest.raises(jsonschema.ValidationError):
         jsonschema.validate(bad, SCHEMA)
 
 
 def test_schema_rejects_empty_reviewers_list():
     bad = load_json(CONFIG)
-    bad["slots"]["reviewers"] = []
+    bad["stages"]["reviewers"] = []
     with pytest.raises(jsonschema.ValidationError):
         jsonschema.validate(bad, SCHEMA)
 
 
 def test_schema_allows_empty_final_reviewers_list():
     ok = load_json(CONFIG)
-    ok["slots"]["final_reviewers"] = []
+    ok["stages"]["final_reviewers"] = []
     jsonschema.validate(ok, SCHEMA)
 
 
@@ -58,7 +58,7 @@ def test_catalog_examples_are_valid():
         pytest.skip("catalog not written yet")
     md = catalog.read_text()
     blocks = re.findall(r"```json\n(.*?)```", md, re.S)
-    cfgs = [json.loads(b) for b in blocks if '"slots"' in b]
+    cfgs = [json.loads(b) for b in blocks if '"stages"' in b]
     assert cfgs, "no example configs found in catalog"
     for c in cfgs:
         jsonschema.validate(c, SCHEMA)

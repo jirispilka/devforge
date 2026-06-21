@@ -3,18 +3,18 @@
   "title": "devforge config",
   "type": "object",
   "additionalProperties": false,
-  "required": ["slots"],
+  "required": ["stages"],
   "properties": {
-    "slots": {
+    "stages": {
       "type": "object",
       "additionalProperties": false,
       "required": ["validate", "architect", "implementer", "reviewers", "final_reviewers"],
       "properties": {
-        "validate":    { "$ref": "#/$defs/slotValue" },
-        "architect":   { "$ref": "#/$defs/slotValue" },
-        "implementer": { "$ref": "#/$defs/slotValue" },
-        "reviewers":       { "type": "array", "items": { "$ref": "#/$defs/slotValue" }, "minItems": 1 },
-        "final_reviewers": { "type": "array", "items": { "$ref": "#/$defs/slotValue" }, "minItems": 0 }
+        "validate":    { "$ref": "#/$defs/stageValue" },
+        "architect":   { "$ref": "#/$defs/stageValue" },
+        "implementer": { "$ref": "#/$defs/stageValue" },
+        "reviewers":       { "type": "array", "items": { "$ref": "#/$defs/stageValue" }, "minItems": 1 },
+        "final_reviewers": { "type": "array", "items": { "$ref": "#/$defs/stageValue" }, "minItems": 0 }
       }
     },
     "oracle": {
@@ -39,7 +39,7 @@
     "plan_mode_gate": { "type": "boolean" }
   },
   "$defs": {
-    "slotValue": {
+    "stageValue": {
       "type": "object",
       "additionalProperties": false,
       "required": ["use"],

@@ -3,64 +3,64 @@
 Pure stdlib. Used by tests/CI; the orchestrator follows the same rules in prose
 (it has no Python runtime on web). Keep the two in sync.
 
-Config slot values are objects `{ "use": "<name>", "model": "<model>" }`. The registry
-maps each slot to a role (`slot_roles`) and each `use` name to the roles it may fill
-plus its engine + scope (`uses`). A `use` is valid in a slot when that slot's role is in
+Config stage values are objects `{ "use": "<name>", "model": "<model>" }`. The registry
+maps each stage to a role (`stage_roles`) and each `use` name to the roles it may fill
+plus its engine + scope (`uses`). A `use` is valid in a stage when that stage's role is in
 the use's `roles`.
 """
 from __future__ import annotations
 
-SINGLE_SLOTS = ("validate", "architect", "implementer")
-LIST_SLOTS = ("reviewers", "final_reviewers")
+SINGLE_STAGES = ("validate", "architect", "implementer")
+LIST_STAGES = ("reviewers", "final_reviewers")
 
 
 def merge_registry(base: dict, repo: dict | None) -> dict:
     """Overlay a repo's registry deltas onto the shipped base.
 
-    `slot_roles` always comes from the base (the slot->role map is fixed). A repo
+    `stage_roles` always comes from the base (the stage->role map is fixed). A repo
     contributes `uses` only; its entries shallow-override base entries with the same
     name. Other keys on `repo` (e.g. `$comment`) are ignored.
     """
     uses = dict(base["uses"])
     if repo:
         uses.update(repo.get("uses", {}))
-    return {"slot_roles": base["slot_roles"], "uses": uses}
+    return {"stage_roles": base["stage_roles"], "uses": uses}
 
 
-def _check_use(slot: str, name: str, registry: dict, errs: list[str]) -> None:
+def _check_use(stage: str, name: str, registry: dict, errs: list[str]) -> None:
     uses = registry["uses"]
     if name not in uses:
-        errs.append(f"unknown use '{name}' in slot '{slot}'")
+        errs.append(f"unknown use '{name}' in stage '{stage}'")
         return
-    role = registry["slot_roles"][slot]
+    role = registry["stage_roles"][stage]
     roles = uses[name]["roles"]
     if role not in roles:
-        errs.append(f"'{name}' is not allowed in slot '{slot}' (role '{role}'; "
+        errs.append(f"'{name}' is not allowed in stage '{stage}' (role '{role}'; "
                     f"it fills roles {roles})")
 
 
 def validate(config: dict, registry: dict) -> list[str]:
     """Return a list of human-readable error strings; empty means valid."""
     errs: list[str] = []
-    slots = config.get("slots", {})
-    for slot in SINGLE_SLOTS:
-        entry = slots.get(slot)
+    stages = config.get("stages", {})
+    for stage in SINGLE_STAGES:
+        entry = stages.get(stage)
         if not entry:
-            errs.append(f"missing slot '{slot}'")
+            errs.append(f"missing stage '{stage}'")
             continue
-        _check_use(slot, entry["use"], registry, errs)
-    for slot in LIST_SLOTS:
-        entries = slots.get(slot)
+        _check_use(stage, entry["use"], registry, errs)
+    for stage in LIST_STAGES:
+        entries = stages.get(stage)
         if entries is None:
-            errs.append(f"missing slot '{slot}'")
+            errs.append(f"missing stage '{stage}'")
             continue
         seen: set[str] = set()
         for entry in entries:
             name = entry["use"]
             if name in seen:
-                errs.append(f"duplicate '{name}' in slot '{slot}'")
+                errs.append(f"duplicate '{name}' in stage '{stage}'")
             seen.add(name)
-            _check_use(slot, name, registry, errs)
+            _check_use(stage, name, registry, errs)
     return errs
 
 

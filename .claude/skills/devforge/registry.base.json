@@ -1,5 +1,5 @@
 {
-  "slot_roles": {
+  "stage_roles": {
     "validate": "validate",
     "architect": "architect",
     "implementer": "implementer",
