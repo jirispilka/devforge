@@ -6,7 +6,8 @@ independent so the reviewer judges the *actual change* — never the implementer
 
 ```
 /devforge <task>
-   validate → explore → architect → [DESIGN GATE: human] →
+   triage (product decision + complexity) → [TRIAGE GATE: human] →
+   validate → explore → architect → [DESIGN GATE: human approves plan + review panel] →
      ┌─ iteration N ──────────────────────────────────────────────┐
      │ implementer edits source, writes claim.md                   │
      │ orchestrator runs the oracle commands + computes diff       │
@@ -18,12 +19,19 @@ independent so the reviewer judges the *actual change* — never the implementer
    → [PRE-MERGE GATE: human] → merge
 ```
 
+Triage runs first and is cheap: a high-level product call (proceed / defer / decline) plus a
+complexity estimate — so a not-worth-it or already-fixed task is declined before any deep
+analysis. The design is kept to ~1 page (approach + pros/cons + files), and at the design
+gate the orchestrator proposes the **verification panel** — which reviewers actually run for
+*this* change — so a minor bug isn't reviewed like a risky refactor.
+
 Runs locally **and** on claude.ai/code (web). Setup is just "attach the repo" — it's
 pure skills: no plugin, no install, no settings prompt.
 
 ## Core Rules
 
-- Human gates control the two consequential decisions: design approval and merge/PR.
+- Human gates control the consequential decisions: triage go/no-go, design + panel
+  approval, and merge/PR.
 - The oracle is deterministic checks from `oracle.commands`; it is not a model opinion.
 - Reviewers are blind to `claim.md` and peer reviews. They judge `task.md`, `design.md`,
   `diff.patch`, and `test-results.txt`.
@@ -46,11 +54,12 @@ are committed, while regenerable `diff.patch` and `test-results.txt` are gitigno
   `claude --plugin-dir /path/to/devforge/.claude`.
 - **On web:** attach this repo to a claude.ai/code session — the skills load automatically.
 - **In another repo:** copy `.claude/skills/` into it (it travels; domain context stays put).
-- **Commands:** `/devforge <task>` to run; `/devforge-approve-design` and
-  `/devforge-approve-merge` are the human-only approvals — each records its gate and
-  **auto-continues** the loop. (`/devforge` with no args resumes an interrupted run.)
-  Type the commands bare (no `devforge:` prefix) whether installed as a plugin or attached
-  standalone / on web: `/devforge`, `/devforge-approve-design`, `/devforge-approve-merge`.
+- **Commands:** `/devforge <task>` to run; `/devforge-approve-triage`,
+  `/devforge-approve-design`, and `/devforge-approve-merge` are the human-only approvals —
+  each records its gate and **auto-continues** the loop. (`/devforge` with no args resumes an
+  interrupted run.) Type the commands bare (no `devforge:` prefix) whether installed as a
+  plugin or attached standalone / on web: `/devforge`, `/devforge-approve-triage`,
+  `/devforge-approve-design`, `/devforge-approve-merge`.
 
 ## Configuration
 
@@ -91,6 +100,7 @@ Vendored engine provenance: [`VENDORED.md`](VENDORED.md).
   devforge/config.default.json      default config copied to .devforge/config.json on first run
   devforge/config.schema.json       schema used to validate generated/project config
   devforge/registry.base.json      the base registry — generic engines (merged with a repo's deltas)
+  devforge-approve-triage/             human-only triage-gate approval
   devforge-approve-design/             human-only design-gate approval
   devforge-approve-merge/              human-only pre-merge-gate approval
   _vendored/                  faithful upstream engine copies (see VENDORED.md)

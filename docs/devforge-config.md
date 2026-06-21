@@ -6,15 +6,50 @@ model it runs on. The oracle is separate: `oracle.commands` defines deterministi
 The base registry (`registry.base.json`) ships with the skill. Repos can add
 `.devforge/registry.json` for domain engines. No wrapper skill is needed per engine.
 
+## Flow & gates
+
+The loop has **three human gates**: a cheap **triage gate** (go/no-go + complexity, before
+any deep analysis), the **design gate** (approve the high-level plan *and* the verification
+panel), and the **pre-merge gate**. Triage runs first and is deliberately high-level — it
+exists so a not-worth-it, already-fixed, or duplicate task can be declined before paying for
+the deep validate + architect work.
+
+The configured `reviewers` / `final_reviewers` lists are a **roster**, not a fixed panel.
+At the design gate the orchestrator proposes the **panel** — the subset to actually run for
+*this* change (you can drop reviewers, drop a heavy/live-e2e final reviewer, and lower the
+iteration budget for a small change, or keep everything for a risky one). The approved panel
+must be a subset of the roster; it is recorded in `state.json` and drives the run.
+
+### Complexity rubric → default panel
+
+Triage rates the change with a consistent rubric; the tier sets the panel the design gate
+starts from (then fine-tunes). Pick the tier whose **size or blast radius** fits — whichever
+is higher.
+
+| Tier | Size (rough) | Blast radius | Default panel |
+|------|--------------|--------------|---------------|
+| `trivial` | ≤10 lines, 1 file, no logic change | peripheral | 1 reviewer; no final; inner=1, rounds=0 |
+| `small` | ~10–50 lines, 1–3 files, localized fix | no core/shared/contract code | 1 reviewer; 1 final; inner=2, rounds=1; no live-e2e |
+| `medium` | ~50–300 lines, several files | shared helpers, not core architecture | 1 reviewer; 2 final; inner=3, rounds=2 |
+| `large` | 300+ lines OR many files | core code, public API / response contract, widely-shared abstractions | full roster incl. live-e2e/contract reviewer; inner=3, rounds=2 |
+
+**Blast-radius override:** a change touching core/shared code or a public API / response
+contract is **`medium` at minimum**, regardless of line count. Defaults are bounded by the
+configured roster — devforge never runs a `use` that isn't in config.
+
 ## The slots
 
 | Slot | Runs | Reads | Writes | `use` options (default **bold**) | Model |
 |------|------|-------|--------|----------------------------------|-------|
 | `validate` | once, first | the task / issue, codebase | `task.md`, `validation.md` | **`brainstorming`** | opus |
-| `architect` | once, after explore | `task.md`, `validation.md`, codebase | `design.md` | **`writing-plans`** | opus |
+| `architect` | once, after explore | `task.md`, `validation.md`, codebase | `design.md` (**high-level, ~1 page**) | **`writing-plans`** | opus |
 | `implementer` | every iteration | `design.md`, prior reviews | source edits, `claim.md` | **`feature-dev`** | opus |
-| `reviewers` (list) | every iteration, parallel | `diff.patch`, `test-results.txt`, spec | `review-<use>.md` each | **`staff-review`**, `thermonuclear`, `code-review` | sonnet |
-| `final_reviewers` (list) | after convergence, parallel | `diff.patch` + working tree, spec | `final-review-<use>.md` each | **`thermonuclear`** + **`code-review`**, `staff-review` | sonnet |
+| `reviewers` (roster) | every iteration, parallel — panel subset only | `diff.patch`, `test-results.txt`, spec | `review-<use>.md` each | **`staff-review`**, `thermonuclear`, `code-review` | sonnet |
+| `final_reviewers` (roster) | after convergence, parallel — panel subset only | `diff.patch` + working tree, spec | `final-review-<use>.md` each | **`thermonuclear`** + **`code-review`**, `staff-review` | sonnet |
+
+`design.md` is a high-level plan a human reviews in one pass — approach, alternatives with
+pros/cons, files (one line each), brief test strategy, risks. No code blocks or exhaustive
+`file:line`; the implementer pins down exact signatures and call sites.
 
 Default engine focus:
 
@@ -39,13 +74,17 @@ Default engine focus:
 
 - `oracle.commands` — ordered, finite, non-mutating checks. Empty means devforge infers
   and records the smallest credible check; if it cannot, the oracle is not green.
-- `inner_iterations` — implement→oracle→reviewers rounds before escalating.
-- `final_review_rounds` — how many times a final review may reopen the inner loop.
-- `plan_mode_gate` — when true and running interactively in the CLI, the design gate
-  renders `design.md` in Claude Code's plan-mode for native approve/reject (the
-  orchestrator calls `EnterPlanMode`, mirrors the design into the plan file, then
-  `ExitPlanMode`); otherwise (and always on web/headless) it falls back to
-  `/devforge-approve-design`. The marker file is the source of truth either way.
+- `inner_iterations` — implement→oracle→reviewers rounds before escalating. This is the
+  roster default; the design-gate panel may lower it for a small change.
+- `final_review_rounds` — how many times a final review may reopen the inner loop. A
+  reopen re-runs **only the final reviewers** (the per-iteration reviewers already passed
+  the converged diff). Panel may lower this too.
+- `plan_mode_gate` — when true and running interactively in the CLI, the **triage gate** and
+  **design gate** render their artifact (`triage.md` / `design.md` + the proposed panel) in
+  Claude Code's plan-mode for native approve/reject (the orchestrator calls `EnterPlanMode`,
+  mirrors the artifact into the plan file, then `ExitPlanMode`); otherwise (and always on
+  web/headless) they fall back to `/devforge-approve-triage` / `/devforge-approve-design`.
+  The marker files are the source of truth either way.
 
 ## Default Config
 
