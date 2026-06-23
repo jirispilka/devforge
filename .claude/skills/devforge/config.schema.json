@@ -1,11 +1,13 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "title": "devforge config",
+  "description": "Stage, model, oracle, and loop-limit settings for devforge runs.",
   "type": "object",
   "additionalProperties": false,
   "required": ["stages"],
   "properties": {
     "stages": {
+      "description": "Engine and model assignments for each devforge stage.",
       "type": "object",
       "additionalProperties": false,
       "required": ["verify_request", "architect", "implementer", "reviewers", "final_reviewers"],
@@ -13,15 +15,17 @@
         "verify_request": { "$ref": "#/$defs/stageValue" },
         "architect":   { "$ref": "#/$defs/stageValue" },
         "implementer": { "$ref": "#/$defs/stageValue" },
-        "reviewers":       { "type": "array", "items": { "$ref": "#/$defs/stageValue" }, "minItems": 1 },
-        "final_reviewers": { "type": "array", "items": { "$ref": "#/$defs/stageValue" }, "minItems": 0 }
+        "reviewers":       { "description": "Roster for inner-loop reviewers. The design gate selects a per-run subset.", "type": "array", "items": { "$ref": "#/$defs/stageValue" }, "minItems": 1 },
+        "final_reviewers": { "description": "Roster for post-convergence reviewers. May be empty.", "type": "array", "items": { "$ref": "#/$defs/stageValue" }, "minItems": 0 }
       }
     },
     "oracle": {
+      "description": "Deterministic checks that must pass before reviewers can approve.",
       "type": "object",
       "additionalProperties": false,
       "properties": {
         "commands": {
+          "description": "Finite, non-mutating shell commands such as type checks, lint checks, builds, and targeted tests.",
           "type": "array",
           "items": { "type": "string", "minLength": 1 },
           "uniqueItems": true
@@ -29,23 +33,25 @@
       }
     },
     "limits": {
+      "description": "Default loop bounds before the design gate chooses run-specific limits.",
       "type": "object",
       "additionalProperties": false,
       "properties": {
-        "inner_iterations":    { "type": "integer", "minimum": 1 },
-        "final_review_rounds": { "type": "integer", "minimum": 0 }
+        "inner_iterations":    { "description": "Maximum regular implement/review iterations.", "type": "integer", "minimum": 1 },
+        "final_review_rounds": { "description": "Maximum targeted reopen rounds from final-review findings.", "type": "integer", "minimum": 0 }
       }
     },
-    "plan_mode_gate": { "type": "boolean" }
+    "plan_mode_gate": { "description": "When true, use plan mode for the design approval gate when available.", "type": "boolean" }
   },
   "$defs": {
     "stageValue": {
+      "description": "One stage assignment. `use` names a registry entry; `model` is optional.",
       "type": "object",
       "additionalProperties": false,
       "required": ["use"],
       "properties": {
-        "use":   { "type": "string" },
-        "model": { "type": "string" }
+        "use":   { "description": "Registry `use` name for the engine that fills this stage.", "type": "string" },
+        "model": { "description": "Model override for this stage, such as opus or sonnet.", "type": "string" }
       }
     }
   }

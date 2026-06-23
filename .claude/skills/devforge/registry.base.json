@@ -10,17 +10,17 @@
     "brainstorming": {
       "roles": ["verify_request"],
       "engine": "../_vendored/brainstorming/ENGINE.md",
-      "scope": "clarifying-question discipline; STRIP its spec-doc write/commit and its own approval gate (the orchestrator owns the gate); keep devforge's GitHub-issue staleness/claim-ledger check"
+      "scope": "use its clarifying-question discipline; skip its spec-doc write/commit flow and approval gate because the orchestrator owns the gate; keep devforge's GitHub issue staleness and claim-ledger checks"
     },
     "writing-plans": {
       "roles": ["architect"],
       "engine": "../_vendored/writing-plans/ENGINE.md",
-      "scope": "planning discipline (concrete files, test strategy, no placeholders); STRIP the docs/plans file-save and the subagent/inline execution handoff"
+      "scope": "use its planning discipline: concrete files, test strategy, no placeholders; skip docs/plans file-save behavior and execution handoff"
     },
     "feature-dev": {
       "roles": ["implementer"],
       "engine": "../_vendored/feature-dev/feature-dev.md",
-      "scope": "implement-only against the approved 2-design.md; SKIP feature-dev's Discovery / clarifying-questions / architecture phases; may dispatch the devforge-code-explorer / devforge-code-architect agents for grounding only"
+      "scope": "implement only against the approved 2-design.md; skip feature-dev discovery, clarifying-question, and architecture phases; may dispatch devforge-code-explorer or devforge-code-architect for grounding only"
     },
     "staff-review": {
       "roles": ["reviewer", "final_reviewer"],
@@ -30,12 +30,12 @@
     "thermonuclear": {
       "roles": ["reviewer", "final_reviewer"],
       "engine": "../_vendored/thermonuclear/ENGINE.md",
-      "scope": "follow as instruction text (NOT Skill-invoked); apply maintainability standards to diff.patch — 1k-line file ceiling, no spaghetti branching, code-judo simplification; map presumptive-blockers to blocker/major"
+      "scope": "follow as instruction text, not as an invoked skill; apply maintainability standards to diff.patch: 1k-line file ceiling, no spaghetti branching, and code-judo simplification; map presumptive blockers to blocker or major"
     },
     "code-review": {
       "roles": ["reviewer", "final_reviewer"],
       "engine": "../_vendored/code-review/code-review.md",
-      "scope": "keep the multi-agent + confidence-score method but RETARGET it: read iter-N/diff.patch + working tree instead of `gh pr diff`; DROP the PR-eligibility checks and the gh-pr-comment step; filter to score >= 80"
+      "scope": "keep the multi-agent and confidence-score method, but read iter-N/diff.patch plus the working tree instead of `gh pr diff`; skip PR eligibility checks and PR comments; report only findings with score >= 80"
     }
   }
 }

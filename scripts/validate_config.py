@@ -1,12 +1,12 @@
-"""Validate a devforge config against the registry.
+"""Validate devforge config against the resolved registry.
 
-Pure stdlib. Used by tests/CI; the orchestrator follows the same rules in prose
-(it has no Python runtime on web). Keep the two in sync.
+Pure stdlib. Used by tests and CI; the orchestrator follows the same rules in prose
+because it has no Python runtime on web. Keep both rule sets in sync.
 
-Config stage values are objects `{ "use": "<name>", "model": "<model>" }`. The registry
-maps each stage to a role (`stage_roles`) and each `use` name to the roles it may fill
-plus its engine + scope (`uses`). A `use` is valid in a stage when that stage's role is in
-the use's `roles`.
+Config stage values are objects like `{ "use": "<name>", "model": "<model>" }`. The
+registry maps each stage to a role (`stage_roles`) and each `use` name to the roles it
+may fill plus its engine and scope (`uses`). A `use` is valid in a stage when that
+stage's role is listed in the use's `roles`.
 """
 from __future__ import annotations
 
@@ -15,11 +15,11 @@ LIST_STAGES = ("reviewers", "final_reviewers")
 
 
 def merge_registry(base: dict, repo: dict | None) -> dict:
-    """Overlay a repo's registry deltas onto the shipped base.
+    """Overlay repo registry entries onto the shipped base.
 
-    `stage_roles` always comes from the base (the stage->role map is fixed). A repo
-    contributes `uses` only; its entries shallow-override base entries with the same
-    name. Other keys on `repo` (e.g. `$comment`) are ignored.
+    `stage_roles` always comes from the base because the stage-to-role map is fixed. A
+    repo contributes `uses` only; entries with the same name shallow-override base
+    entries. Other repo keys, such as `$comment`, are ignored.
     """
     uses = dict(base["uses"])
     if repo:
@@ -35,8 +35,10 @@ def _check_use(stage: str, name: str, registry: dict, errs: list[str]) -> None:
     role = registry["stage_roles"][stage]
     roles = uses[name]["roles"]
     if role not in roles:
-        errs.append(f"'{name}' is not allowed in stage '{stage}' (role '{role}'; "
-                    f"it fills roles {roles})")
+        errs.append(
+            f"use '{name}' is not allowed in stage '{stage}' "
+            f"(stage role '{role}'; use supports {roles})"
+        )
 
 
 def validate(config: dict, registry: dict) -> list[str]:

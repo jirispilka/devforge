@@ -1,6 +1,6 @@
 ---
 name: devforge-approve-design
-description: HUMAN-ONLY design-gate approval for devforge. Run after reviewing .devforge/2-design.md and .devforge/_panel.json; records the panel in _state.json, writes .devforge/_design.approved, and hands back to /devforge. The agent cannot invoke this.
+description: HUMAN-ONLY devforge design approval. Run after reviewing .devforge/2-design.md and .devforge/_panel.json. Records the approved panel in _state.json, writes .devforge/_design.approved, and hands control back to /devforge. The agent cannot invoke this.
 disable-model-invocation: true
 allowed-tools: Read, Bash, Skill
 argument-hint: ""
@@ -8,7 +8,7 @@ argument-hint: ""
 
 # Approve design
 
-Record human approval of the design and review panel so implementation may begin.
+Record human approval of the design and review panel so implementation can begin.
 
 1. Read `.devforge/2-design.md` and `.devforge/_panel.json`; stop if either is missing.
 2. Summarize the approach, planned changes, reviewers, final reviewers, limits, and panel

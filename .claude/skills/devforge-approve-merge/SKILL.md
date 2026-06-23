@@ -1,6 +1,6 @@
 ---
 name: devforge-approve-merge
-description: HUMAN-ONLY pre-merge approval for devforge. Run after reviewing the change and .devforge/ evidence; writes .devforge/_merge.approved and hands back to /devforge. The agent cannot invoke this.
+description: HUMAN-ONLY devforge merge approval. Run after reviewing the change and .devforge evidence. Writes .devforge/_merge.approved and hands control back to /devforge. The agent cannot invoke this.
 disable-model-invocation: true
 allowed-tools: Read, Bash, Skill
 argument-hint: ""
@@ -8,11 +8,12 @@ argument-hint: ""
 
 # Approve merge
 
-Record human approval for commit/push/PR. Interactive runs confirm in chat; this skill is the
-headless fallback that records the same marker.
+Record human approval for commit, push, or PR creation. Interactive runs confirm in chat;
+this skill is the headless fallback that records the same marker.
 
-1. Read `.devforge/_progress.md` plus latest `iter-*/review-*.md` and
-   `iter-*/final-review-*.md` if present. Summarize change, oracle status, and verdicts.
+1. Read `.devforge/_progress.md` plus the latest `iter-*/review-*.md` and
+   `iter-*/final-review-*.md` files if present. Summarize the change, oracle status, and
+   verdicts.
 2. If tests are not green or any verdict is `FAIL`, warn the user and confirm they still want to
    proceed.
 3. Write the marker:
