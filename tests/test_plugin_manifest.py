@@ -12,7 +12,7 @@ PLUGIN = load_json(REPO_ROOT / ".claude/.claude-plugin/plugin.json")
 EXPECTED_SKILLS = {
     "devforge",
     "devforge-approve-design",
-    "devforge-approve-merge",
+    "devforge-approve-create-pr",
 }
 
 

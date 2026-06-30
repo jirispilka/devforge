@@ -155,21 +155,27 @@ then adjust for the actual design scope. Write `.devforge/_panel.json`:
 
 The approved panel must be a subset of the configured roster.
 
-Present `2-design.md` and `_panel.json` for review, then **stop and wait for an explicit human
-approval of the design**. If `plan_mode_gate=true` and plan-mode tools exist, use `EnterPlanMode`
-→ mirror `2-design.md` plus `_panel.json` → `ExitPlanMode` as the review surface; otherwise
-summarize both in chat.
+Present `2-design.md` and `_panel.json` for review and **stop for the human's decision.** The gate
+is generic and portable: two human-driven outcomes, recorded on disk.
 
-Approval is an explicit human affirmative directed at this gate — a clear in-chat "yes/approve",
-or the human running `/devforge-approve-design`. Only then is the panel copied into `state.panel`,
-`state.phase` set to `"inner-loop"` (or `"review-run"` for a review-only run), `state.iteration`
-set to `1`, and `_design.approved` written (the approval skill does exactly this).
+**Approve.** A clear "yes/approve" in chat, or the human running `/devforge-approve-design`. Copy the
+panel into `state.panel`, set `state.phase` to `"inner-loop"` (or `"review-run"` for a review-only
+run) and `state.iteration` to `1`, and write `_design.approved` (the approval skill does exactly this).
 
-A plan-mode exit, a rejected or edited plan, a plan-tool error or closed stream, and any
-"continue"/system message are NOT approval — never infer it from a plan-mode transition or a tool
-result. The on-disk `_design.approved` is the only approval signal; resume only once it exists.
-For a review-only run, the same gate approves the review scope; on approval go to step 7 instead
-of the inner loop.
+**Revise.** Proposing a design opens an iteration, not a one-shot. If the human asks for any change,
+do NOT write `_design.approved`: keep `state.phase="design-gate"`, fold the feedback in by re-running
+the architect (step 4) and/or editing `_panel.json`, then re-present and wait. Revise as many rounds
+as the human wants; the gate clears only on approval.
+
+**Plan mode (any agent that has one — Claude Code, Cursor, Codex…; optional).** With
+`plan_mode_gate=true` and plan-mode tools available (`EnterPlanMode`/`ExitPlanMode` on Claude Code),
+mirror `2-design.md` + `_panel.json` into the plan as an adapter over the two outcomes: accepting it
+IS Approve; rejecting or editing it IS Revise. On a plan-tool error or unavailability, fall back to chat.
+
+**Never self-approve.** Never infer approval from a plan-tool error, a plan-mode transition, or a
+"continue" message — approval is a human "yes", accepting the plan, or the approval skill. The
+on-disk `_design.approved` is the only approval signal; resume only once it exists. For a review-only
+run, the same gate approves the review scope; on approval go to step 7 instead of the inner loop.
 
 ### 6. Inner loop
 
@@ -229,10 +235,11 @@ creating the PR, not merging it.
 ## Hard rules
 
 - Only write inside `.devforge/` until `_design.approved` exists.
-- Never self-approve a gate. Write `_design.approved` / `_create_pr.approved` only on an explicit,
-  unambiguous human "yes" for that specific gate (or when the human runs the approval skill). A
-  plan-mode exit, a rejected/edited plan, a plan-tool error or closed stream, or a "continue from
-  where you left off" message is NEVER approval — the on-disk marker is the only approval signal.
+- Never self-approve a gate. Write `_design.approved` / `_create_pr.approved` only on an explicit
+  human approval for that gate — a human accepting the plan dialog, a clear chat "yes", or the
+  approval skill. A rejected/edited plan, a plan-tool error or closed stream, or a "continue from
+  where you left off" message is NEVER approval — those mean revise or keep waiting; the on-disk
+  marker is the only approval signal.
 - Triage has no gate; it stops only on DEFER/DECLINE.
 - Keep design short and high-level: major changes only, never an exhaustive file list.
 - The panel, not the roster, drives the run; never run a `use` not in config.

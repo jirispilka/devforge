@@ -41,7 +41,7 @@
         "final_review_rounds": { "description": "Maximum targeted reopen rounds from final-review findings.", "type": "integer", "minimum": 0 }
       }
     },
-    "plan_mode_gate": { "description": "When true, use plan mode for the design approval gate when available.", "type": "boolean" }
+    "plan_mode_gate": { "description": "For any agent that has a plan mode (Claude Code, Cursor, Codex, …). When true (default), present the generic design gate through plan mode as an adapter: accepting the plan approves, rejecting or editing it revises; falls back to the chat gate if plan tools error or are unavailable. Set false for agents without a plan mode or for headless runs; the chat + _design.approved gate is the portable mechanism either way.", "type": "boolean" }
   },
   "$defs": {
     "stageValue": {

@@ -26,9 +26,9 @@ def test_orchestrator_has_plan_mode_gate():
 
 
 def test_orchestrator_keeps_the_two_marker_gates():
-    # Design (before source edits) and merge (before git writes) are the only markers.
+    # Design (before source edits) and create-PR (before git writes) are the only markers.
     assert "_design.approved" in ORCH
-    assert "_merge.approved" in ORCH
+    assert "_create_pr.approved" in ORCH
 
 
 def test_orchestrator_has_no_triage_gate():
@@ -82,9 +82,9 @@ def test_approve_design_records_the_approved_panel():
 
 
 def test_orchestrator_tracks_resumable_post_design_phases():
-    for phase in ("inner-loop", "final-review", "final-reopen", "merge-confirm"):
+    for phase in ("inner-loop", "final-review", "final-reopen", "create-pr"):
         assert phase in ORCH
-    assert 'state.phase="merge-confirm"' in ORCH
+    assert 'state.phase="create-pr"' in ORCH
 
 
 def test_implementer_reads_validated_spec_not_only_design():
@@ -117,16 +117,19 @@ def test_orchestrator_has_first_class_review_mode():
     assert "do NOT implement" in ORCH
 
 
-def test_orchestrator_never_self_approves_from_plan_mode():
-    # Regression: a plan-mode exit / tool error / "continue" message must not be read as approval.
+def test_orchestrator_accept_approves_revise_iterates_no_self_approve():
+    # Contract: a human accepting the plan IS approval; reject/edit iterates the design;
+    # the agent never self-approves, and a tool error / "continue" message is never approval.
     assert "Never self-approve a gate" in ORCH
-    assert "NOT approval" in ORCH
+    assert "accepting the plan" in ORCH
+    assert "Revise" in ORCH
+    assert "iterat" in ORCH.lower()
     assert "only approval signal" in ORCH
     assert "never infer" in ORCH.lower()
 
 
-def test_orchestrator_merge_is_chat_confirm_not_plan_mode():
-    assert "Merge confirm" in ORCH
+def test_orchestrator_create_pr_is_chat_confirm_not_plan_mode():
+    assert "create-PR confirm" in ORCH
     assert "commit & open PR?" in ORCH
     assert "No plan mode" in ORCH
 

@@ -41,7 +41,7 @@ flowchart TD
 ```text
 /devforge <task>
   triage product decision              (no gate; stops only on DEFER/DECLINE)
-  verify request + explore + design -> DESIGN GATE: review (plan mode) + approve design + panel
+  verify request + explore + design -> DESIGN GATE: review + accept or revise + panel
   implement -> oracle -> blind reviewers -> final reviewers
                                         (loop until zero findings, including nits)
   create-PR confirm (plain chat)    -> commit / PR
@@ -69,12 +69,15 @@ summary. It only enters the implementation loop if you ask it to fix those findi
 - `/devforge-approve-create-pr` is the human-only fallback for recording approval
   before commit, push, and PR creation.
 
-Plan mode (when available) is the design **review surface**, not the approval itself.
-Approval is always an explicit human affirmative — a clear chat "yes" or
-`/devforge-approve-design`; creating the PR uses a chat yes/no or `/devforge-approve-create-pr`. devforge
-never treats a plan-mode exit, a rejected/edited plan, or a tool error as approval, and never
-self-approves. The on-disk `_design.approved` / `_create_pr.approved` markers are the only approval
-signals.
+The design gate is generic and portable: devforge presents `2-design.md` and the panel and waits
+for one of two human-driven outcomes. **Approve** — a chat "yes" or `/devforge-approve-design` —
+writes `_design.approved` and proceeds. **Revise** — any change request — re-runs the architect and
+re-presents, iterating until you approve. For any agent that has a plan mode (Claude Code, Cursor,
+Codex, …), `plan_mode_gate: true` (the default) presents this through plan mode as an adapter:
+accepting the plan is Approve, rejecting or editing it is Revise; if the plan tool errors or is
+unavailable (remote, headless, web sessions) it falls back to the chat gate. The agent never self-approves — a plan-tool error or a "continue" message is
+never approval. Creating the PR uses a chat yes/no or `/devforge-approve-create-pr`. The on-disk
+`_design.approved` / `_create_pr.approved` markers are the only approval signals.
 
 ## Install
 
