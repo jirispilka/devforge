@@ -108,7 +108,7 @@ Method line omitted. For stage key `K` with assignment `S`:
 
 | role | reads | do NOT read | writes | format |
 |------|-------|-------------|--------|--------|
-| `verify` | `_user_request.md`, `1-triage.md`, codebase, referenced issue | `2-design.md`, `3-success-criteria.md` | `_request_fact_check.md` | claim ledger: every request claim tagged `VALID \| STALE \| LIKELY-FIXED \| UNVERIFIABLE` with evidence, plus a one-line verdict — never empty |
+| `verify` | `_user_request.md`, `1-triage.md`, codebase, referenced issue; **for a review-only run also the PR/branch description and its diff — treat that description as the claim source** | `2-design.md`, `3-success-criteria.md` | `_request_fact_check.md` | claim ledger: every request claim tagged `VALID \| STALE \| LIKELY-FIXED \| UNVERIFIABLE` with evidence, plus a one-line verdict — never empty |
 | `explorer` | codebase | `.devforge/` internals | `_codebase_map.md` | ≤1 page: key files · patterns · data flow · risks |
 | `architect` | `_user_request.md`, `1-triage.md`, `_request_fact_check.md`, `_codebase_map.md` if present, codebase; on a revision pass also its previous `2-design.md` + `_design_feedback.md` | `3-success-criteria.md` | `2-design.md` | the design template in step 3 |
 | `success_criteria` | pasted content of the "What we're solving" and "How it will work" sections of `2-design.md`, plus `_user_request.md` and `1-triage.md` — nothing else | the rest of `2-design.md` (the solution), `claim.md` | `3-success-criteria.md` | numbered, testable criteria — each verifiable by a command or an observable behavior; no solution details |
@@ -161,7 +161,10 @@ Blast-radius override: core/shared code or public API/response-contract changes 
 Run the `verify` stage on every run — never skipped by tier. It builds the authoritative claim
 ledger in `_request_fact_check.md`: every claim in the request tagged
 `VALID | STALE | LIKELY-FIXED | UNVERIFIABLE` with evidence (running an existing test to verify
-a claim is fine — remove artifacts it leaves). If core claims are stale or already fixed,
+a claim is fine — remove artifacts it leaves). **For a review-only run the claim source is the
+PR/branch description** (fetch it, e.g. `gh pr view`): tag each thing the PR says it does against
+its actual diff and the codebase — this is the "does the PR do what it claims" lens no reviewer
+covers, since reviewers stay blind to the PR narrative. If core claims are stale or already fixed,
 present its verdict and stop with a recommendation; the human decides. Otherwise set
 `state.phase="design"`.
 
