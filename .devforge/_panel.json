@@ -1,0 +1,13 @@
+{
+  "tier": "large",
+  "reason": "30-file, 1325-line deletion in a published package consumed by the hosted internal server; blast-radius override applies. Review-only run: reviewers and final_reviewers all run once against the branch diff.",
+  "reviewers": [
+    { "use": "staff-review", "model": "sonnet" }
+  ],
+  "final_reviewers": [
+    { "use": "code-review", "model": "sonnet" },
+    { "use": "thermonuclear", "model": "sonnet" }
+  ],
+  "inner_iterations": 1,
+  "final_review_rounds": 1
+}
