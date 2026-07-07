@@ -1,13 +1,12 @@
 {
-  "tier": "large",
-  "reason": "30-file, 1325-line deletion in a published package consumed by the hosted internal server; blast-radius override applies. Review-only run: reviewers and final_reviewers all run once against the branch diff.",
+  "tier": "small",
+  "reason": "3 localized files: a doc reword, one orphaned-util removal + its test, and an import-style nit. Low blast radius; getValuesByDotKeys removal verified safe cross-repo.",
   "reviewers": [
     { "use": "staff-review", "model": "sonnet" }
   ],
   "final_reviewers": [
-    { "use": "code-review", "model": "sonnet" },
-    { "use": "thermonuclear", "model": "sonnet" }
+    { "use": "code-review", "model": "sonnet" }
   ],
-  "inner_iterations": 1,
+  "inner_iterations": 2,
   "final_review_rounds": 1
 }

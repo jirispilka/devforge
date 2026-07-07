@@ -1,1 +1,1 @@
-{"phase":"review-run","iteration":1,"review_only":true,"status":"findings-ready","head_sha":"5a9c9e4266a16651f132966495e855c117e84bd5","target":{"repo":"apify/apify-mcp-server","pr":1058,"head":"937ef53","base":"4d76e50"}}
+{"phase":"design-gate","iteration":1,"review_only":false,"head_sha":"5a9c9e4266a16651f132966495e855c117e84bd5","target":{"repo":"apify/apify-mcp-server","pr":1058,"branch":"chore/remove-dead-code","head":"937ef53"}}
