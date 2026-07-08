@@ -5,6 +5,11 @@ human-gated loop. `/devforge <task>` separates product triage, request verificat
 design, success criteria, implementation, review, tests, fulfillment, and create-PR
 approval into durable files under `.devforge/`.
 
+<p align="center">
+  <img src="docs/assets/devforge-overview.svg" width="920"
+       alt="devforge overview — the orchestrator routes, subagents judge, and files are the only handoff; the run flows from /devforge <task> through triage, verify, design, and human iteration to the design gate, then an implement/review loop, final reviewers, and a fulfillment check, ending at a create-PR confirm before commit.">
+</p>
+
 The core principle: **the orchestrator routes; subagents judge; files are the only
 handoff.** Every judgment — the claim ledger, the design, the success criteria, each
 review, the fulfillment check — is a subagent writing one file with a narrow read set.
@@ -27,6 +32,12 @@ Three properties matter most:
   solution existed — `MET | NOT MET` per criterion, with evidence.
 
 ## Flow
+
+The diagram above is the map; the block below is the same run as a quick text
+reference, and the collapsible holds a Mermaid version for editing.
+
+<details>
+<summary>Mermaid flow diagram</summary>
 
 ```mermaid
 flowchart TD
@@ -55,6 +66,8 @@ flowchart TD
     CreatePrConfirm -->|yes| Finish["Commit / push / PR"]
     CreatePrConfirm -->|no| Hold["Wait"]
 ```
+
+</details>
 
 ```text
 /devforge <task>
@@ -198,10 +211,10 @@ Default config:
 ```json
 {
   "stages": {
-    "reviewers": [{ "use": "staff-review", "model": "sonnet" }],
+    "reviewers": [{ "use": "staff-review", "model": "auto" }],
     "final_reviewers": [
-      { "use": "thermonuclear", "model": "sonnet" },
-      { "use": "code-review", "model": "sonnet" }
+      { "use": "thermonuclear", "model": "auto" },
+      { "use": "code-review", "model": "auto" }
     ]
   },
   "oracle": { "commands": [] },

@@ -1,0 +1,172 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 1200 1096" font-family="'Segoe UI', -apple-system, BlinkMacSystemFont, Helvetica, Arial, sans-serif" role="img" aria-label="devforge: a human-gated coding loop. The orchestrator routes, subagents judge, and files are the only handoff. Flow: task, triage, verify, design, iterate with the human, design gate, implement loop, final reviewers, fulfillment, create-PR confirm, commit.">
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0" stop-color="#0d1117"/>
+      <stop offset="1" stop-color="#0b1017"/>
+    </linearGradient>
+    <linearGradient id="logo" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0" stop-color="#58a6ff"/>
+      <stop offset="1" stop-color="#bc8cff"/>
+    </linearGradient>
+    <linearGradient id="green" x1="0" y1="0" x2="1" y2="0">
+      <stop offset="0" stop-color="#132a1c"/>
+      <stop offset="1" stop-color="#16351f"/>
+    </linearGradient>
+    <marker id="ah" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto" markerUnits="userSpaceOnUse">
+      <path d="M0,0 L7,3 L0,6 Z" fill="#7d8590"/>
+    </marker>
+    <marker id="ah-amber" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto" markerUnits="userSpaceOnUse">
+      <path d="M0,0 L7,3 L0,6 Z" fill="#d29922"/>
+    </marker>
+    <marker id="ah-blue" markerWidth="9" markerHeight="9" refX="7" refY="3" orient="auto" markerUnits="userSpaceOnUse">
+      <path d="M0,0 L7,3 L0,6 Z" fill="#58a6ff"/>
+    </marker>
+  </defs>
+
+  <rect x="0" y="0" width="1200" height="1096" rx="24" fill="url(#bg)"/>
+  <rect x="0.75" y="0.75" width="1198.5" height="1094.5" rx="23.5" fill="none" stroke="#21262d" stroke-width="1.5"/>
+
+  <!-- ===== Header ===== -->
+  <rect x="64" y="44" width="44" height="44" rx="12" fill="url(#logo)"/>
+  <path d="M78 66 h16 M86 58 v16" stroke="#0d1117" stroke-width="3.5" stroke-linecap="round"/>
+  <text x="122" y="70" font-size="40" font-weight="700" fill="#e6edf3">devforge</text>
+  <text x="124" y="98" font-size="16" fill="#8b949e">A human-gated coding loop for Claude Code &#8212; <tspan fill="#58a6ff" font-family="monospace">/devforge &lt;task&gt;</tspan></text>
+
+  <rect x="700" y="50" width="436" height="36" rx="18" fill="#161b22" stroke="#30363d"/>
+  <text x="918" y="73" font-size="13" text-anchor="middle" fill="#8b949e">orchestrator routes <tspan fill="#484f58">&#183;</tspan> subagents judge <tspan fill="#484f58">&#183;</tspan> files are the handoff</text>
+
+  <line x1="64" y1="128" x2="1136" y2="128" stroke="#21262d" stroke-width="1.5"/>
+
+  <!-- ===== THE IDEA ===== -->
+  <text x="64" y="166" font-size="13" letter-spacing="3" font-weight="600" fill="#6e7681">THE IDEA</text>
+
+  <!-- pillar 1 -->
+  <rect x="64" y="182" width="336" height="150" rx="14" fill="#0f141b" stroke="#30363d"/>
+  <text x="90" y="228" font-size="20" font-weight="600" fill="#58a6ff">Orchestrator routes</text>
+  <rect x="90" y="238" width="42" height="3" rx="1.5" fill="#58a6ff"/>
+  <text x="90" y="270" font-size="13.5" fill="#8b949e">Dispatches each stage and records</text>
+  <text x="90" y="290" font-size="13.5" fill="#8b949e">your feedback verbatim. Never</text>
+  <text x="90" y="310" font-size="13.5" fill="#8b949e">authors a judgment file itself.</text>
+
+  <!-- pillar 2 -->
+  <rect x="432" y="182" width="336" height="150" rx="14" fill="#0f141b" stroke="#30363d"/>
+  <text x="458" y="228" font-size="20" font-weight="600" fill="#bc8cff">Subagents judge</text>
+  <rect x="458" y="238" width="42" height="3" rx="1.5" fill="#bc8cff"/>
+  <text x="458" y="270" font-size="13.5" fill="#8b949e">Every judgment is one subagent</text>
+  <text x="458" y="290" font-size="13.5" fill="#8b949e">writing one file, with a</text>
+  <text x="458" y="310" font-size="13.5" fill="#8b949e">deliberately narrow read set.</text>
+
+  <!-- pillar 3 -->
+  <rect x="800" y="182" width="336" height="150" rx="14" fill="#0f141b" stroke="#30363d"/>
+  <text x="826" y="228" font-size="20" font-weight="600" fill="#3fb950">Files are the handoff</text>
+  <rect x="826" y="238" width="42" height="3" rx="1.5" fill="#3fb950"/>
+  <text x="826" y="270" font-size="13.5" fill="#8b949e">Chat is ephemeral. Each stage</text>
+  <text x="826" y="290" font-size="13.5" fill="#8b949e">writes one file; each role reads</text>
+  <text x="826" y="310" font-size="13.5" fill="#8b949e">only what it needs &#8212; stays blind.</text>
+
+  <!-- callouts -->
+  <rect x="64" y="352" width="520" height="46" rx="10" fill="#14110a" stroke="#d29922"/>
+  <text x="88" y="381" font-size="15" font-weight="600" fill="#d29922">&#9670; Two human gates<tspan font-weight="400" fill="#8b949e">   &#8212;  design gate &#183; create-PR confirm</tspan></text>
+
+  <rect x="616" y="352" width="520" height="46" rx="10" fill="#0f141b" stroke="#30363d"/>
+  <text x="640" y="381" font-size="15" font-weight="600" fill="#bc8cff">Blind judgments<tspan font-weight="400" fill="#8b949e">   &#8212;  architect &#8869; criteria &#8869; reviewers</tspan></text>
+
+  <line x1="64" y1="428" x2="1136" y2="428" stroke="#21262d" stroke-width="1.5"/>
+
+  <!-- ===== THE FLOW ===== -->
+  <text x="64" y="466" font-size="13" letter-spacing="3" font-weight="600" fill="#6e7681">THE FLOW</text>
+  <text x="1136" y="466" font-size="12.5" text-anchor="end" fill="#8b949e"><tspan fill="#d29922" font-weight="600">&#9670;</tspan> human gate     <tspan fill="#d29922">&#8212; &#8212;</tspan> loop back</text>
+
+  <!-- Row A (left to right) -->
+  <!-- A1 -->
+  <rect x="64" y="500" width="236" height="70" rx="12" fill="#0f141b" stroke="#30363d" stroke-width="1.5"/>
+  <rect x="64" y="500" width="5" height="70" rx="2.5" fill="#58a6ff"/>
+  <text x="88" y="533" font-size="16.5" font-weight="600" fill="#e6edf3" font-family="monospace">/devforge &lt;task&gt;</text>
+  <text x="88" y="554" font-size="12.5" fill="#8b949e">start a new run</text>
+  <!-- A2 -->
+  <rect x="342" y="500" width="236" height="70" rx="12" fill="#0f141b" stroke="#30363d" stroke-width="1.5"/>
+  <rect x="342" y="500" width="5" height="70" rx="2.5" fill="#7d8590"/>
+  <text x="366" y="533" font-size="16.5" font-weight="600" fill="#e6edf3">Triage</text>
+  <text x="366" y="554" font-size="12" fill="#8b949e">PROCEED &#183; DEFER &#183; DECLINE</text>
+  <!-- A3 -->
+  <rect x="620" y="500" width="236" height="70" rx="12" fill="#0f141b" stroke="#30363d" stroke-width="1.5"/>
+  <rect x="620" y="500" width="5" height="70" rx="2.5" fill="#58a6ff"/>
+  <text x="644" y="533" font-size="16.5" font-weight="600" fill="#e6edf3">Verify</text>
+  <text x="644" y="554" font-size="12.5" fill="#8b949e">always &#183; claim ledger</text>
+  <!-- A4 -->
+  <rect x="898" y="500" width="236" height="70" rx="12" fill="#0f141b" stroke="#30363d" stroke-width="1.5"/>
+  <rect x="898" y="500" width="5" height="70" rx="2.5" fill="#bc8cff"/>
+  <text x="922" y="533" font-size="16.5" font-weight="600" fill="#e6edf3">Design</text>
+  <text x="922" y="554" font-size="12.5" fill="#8b949e">architect + criteria &#183; blind</text>
+
+  <line x1="300" y1="535" x2="340" y2="535" stroke="#7d8590" stroke-width="1.8" marker-end="url(#ah)"/>
+  <line x1="578" y1="535" x2="618" y2="535" stroke="#7d8590" stroke-width="1.8" marker-end="url(#ah)"/>
+  <line x1="856" y1="535" x2="896" y2="535" stroke="#7d8590" stroke-width="1.8" marker-end="url(#ah)"/>
+  <line x1="1016" y1="570" x2="1016" y2="658" stroke="#7d8590" stroke-width="1.8" marker-end="url(#ah)"/>
+
+  <!-- stop stubs -->
+  <line x1="460" y1="570" x2="460" y2="590" stroke="#f85149" stroke-width="1.5" stroke-dasharray="4 3" marker-end="url(#ah)"/>
+  <text x="460" y="608" font-size="11.5" text-anchor="middle" fill="#f85149">DEFER / DECLINE &#8594; stop</text>
+  <line x1="738" y1="570" x2="738" y2="590" stroke="#f85149" stroke-width="1.5" stroke-dasharray="4 3" marker-end="url(#ah)"/>
+  <text x="738" y="608" font-size="11.5" text-anchor="middle" fill="#f85149">stale / fixed &#8594; stop</text>
+
+  <!-- Row B (right to left) -->
+  <!-- B1 -->
+  <rect x="898" y="660" width="236" height="70" rx="12" fill="#0f141b" stroke="#30363d" stroke-width="1.5"/>
+  <rect x="898" y="660" width="5" height="70" rx="2.5" fill="#3fb950"/>
+  <text x="922" y="693" font-size="16.5" font-weight="600" fill="#e6edf3">Iterate with human</text>
+  <text x="922" y="714" font-size="12" fill="#8b949e">one question at a time &#183; feedback</text>
+  <!-- B2 gate -->
+  <rect x="620" y="660" width="236" height="70" rx="12" fill="#171203" stroke="#d29922" stroke-width="2"/>
+  <text x="644" y="693" font-size="16.5" font-weight="600" fill="#f0d174">&#9670; Design gate</text>
+  <text x="644" y="714" font-size="11.5" fill="#c9b783">approve design &#183; criteria &#183; panel</text>
+  <!-- B3 -->
+  <rect x="342" y="660" width="236" height="70" rx="12" fill="#0f141b" stroke="#30363d" stroke-width="1.5"/>
+  <rect x="342" y="660" width="5" height="70" rx="2.5" fill="#58a6ff"/>
+  <text x="366" y="693" font-size="16.5" font-weight="600" fill="#e6edf3">Implement loop &#8635;</text>
+  <text x="366" y="714" font-size="11" fill="#8b949e">implement &#8596; oracle &#8596; reviewers</text>
+
+  <line x1="898" y1="695" x2="858" y2="695" stroke="#7d8590" stroke-width="1.8" marker-end="url(#ah)"/>
+  <line x1="620" y1="695" x2="580" y2="695" stroke="#7d8590" stroke-width="1.8" marker-end="url(#ah)"/>
+  <line x1="460" y1="730" x2="460" y2="818" stroke="#7d8590" stroke-width="1.8" marker-end="url(#ah)"/>
+
+  <!-- revise loop: gate back to iterate -->
+  <path d="M738 660 C 738 622, 1016 622, 1016 658" fill="none" stroke="#d29922" stroke-width="1.5" stroke-dasharray="5 4" marker-end="url(#ah-amber)"/>
+  <text x="877" y="616" font-size="11.5" text-anchor="middle" fill="#d29922">revise</text>
+
+  <!-- implement loop caption -->
+  <text x="460" y="768" font-size="11" text-anchor="middle" fill="#6e7681">loops until oracle green &amp; no blocker / major</text>
+
+  <!-- Row C (left to right) -->
+  <!-- C1 -->
+  <rect x="342" y="820" width="236" height="70" rx="12" fill="#0f141b" stroke="#30363d" stroke-width="1.5"/>
+  <rect x="342" y="820" width="5" height="70" rx="2.5" fill="#bc8cff"/>
+  <text x="366" y="853" font-size="16.5" font-weight="600" fill="#e6edf3">Final reviewers</text>
+  <text x="366" y="874" font-size="12.5" fill="#8b949e">bounded targeted fix rounds</text>
+  <!-- C2 -->
+  <rect x="620" y="820" width="236" height="70" rx="12" fill="#0f141b" stroke="#30363d" stroke-width="1.5"/>
+  <rect x="620" y="820" width="5" height="70" rx="2.5" fill="#3fb950"/>
+  <text x="644" y="853" font-size="16.5" font-weight="600" fill="#e6edf3">Fulfillment</text>
+  <text x="644" y="874" font-size="12.5" fill="#8b949e">criteria vs reality &#183; MET / NOT MET</text>
+  <!-- C3 gate -->
+  <rect x="898" y="820" width="236" height="70" rx="12" fill="#171203" stroke="#d29922" stroke-width="2"/>
+  <text x="922" y="853" font-size="16.5" font-weight="600" fill="#f0d174">&#9670; Create-PR confirm</text>
+  <text x="922" y="874" font-size="11.5" fill="#c9b783">human &#183; commit &amp; open PR</text>
+
+  <line x1="578" y1="855" x2="618" y2="855" stroke="#7d8590" stroke-width="1.8" marker-end="url(#ah)"/>
+  <line x1="856" y1="855" x2="896" y2="855" stroke="#7d8590" stroke-width="1.8" marker-end="url(#ah)"/>
+
+  <!-- reopen loop: fulfillment back to implement -->
+  <path d="M738 820 L 738 790 L 500 790 L 500 732" fill="none" stroke="#d29922" stroke-width="1.5" stroke-dasharray="5 4" marker-end="url(#ah-amber)"/>
+  <text x="619" y="784" font-size="11.5" text-anchor="middle" fill="#d29922">NOT MET &#8594; reopen</text>
+
+  <!-- terminal -->
+  <line x1="1016" y1="890" x2="1016" y2="944" stroke="#7d8590" stroke-width="1.8" marker-end="url(#ah)"/>
+  <rect x="898" y="946" width="236" height="54" rx="27" fill="url(#green)" stroke="#3fb950" stroke-width="1.5"/>
+  <text x="1016" y="979" font-size="16" font-weight="600" text-anchor="middle" fill="#56d364">Commit &#183; push &#183; PR</text>
+
+  <!-- review-only footnote -->
+  <rect x="64" y="1018" width="1072" height="50" rx="10" fill="#0f141b" stroke="#30363d" stroke-dasharray="6 4"/>
+  <text x="90" y="1041" font-size="12.5" fill="#8b949e"><tspan font-weight="600" fill="#58a6ff">Review-only path</tspan>  &#8212;  for &#8220;review PR / branch X&#8221;: triage &#183; verify &#183; design the scope &#183; run the approved panel on the existing diff &#183; report findings.</text>
+  <text x="90" y="1059" font-size="12.5" fill="#6e7681">It enters the implement loop only if you ask it to fix what the panel found.</text>
+</svg>
