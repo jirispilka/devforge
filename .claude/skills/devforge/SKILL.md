@@ -62,8 +62,12 @@ reliably type a slash-command. Surface everything they need into the conversatio
 2. Fresh run: require a non-empty `<task>`. Write it verbatim to `.devforge/_user_request.md`.
    Initialize `_state.json`: `{"phase":"triage","iteration":0,"head_sha":"<git rev-parse HEAD>"}`.
 3. If `.devforge/_state.json` exists, resume. If a new non-empty `<task>` differs from
-   `_user_request.md`, ask continue vs fresh; on fresh, move the old run into
-   `.devforge/archive/<timestamp>/` first.
+   `_user_request.md`, ask continue vs fresh; on fresh — or when the previous run is
+   `phase=done` — move the old run's files (all numbered/underscore files and `iter-*/`, keeping
+   `config.json`, `config.local.json`, `registry.json`, `.gitignore`) into
+   `.devforge/archive/<timestamp>-<short-slug>/` first. Sequential runs in one session are
+   normal; each gets a clean directory. When batch tasks branch off the same base, note in each
+   run's PR body which sibling PRs touch the same files (merge-conflict forecast).
 4. Load config before dispatching any stage:
    - Copy this skill's `config.default.json` to `.devforge/config.json` if absent.
    - Shallow-merge `.devforge/config.local.json` over it if present.
