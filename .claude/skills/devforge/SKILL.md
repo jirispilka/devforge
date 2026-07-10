@@ -155,6 +155,16 @@ Complexity rubric:
 Blast-radius override: core/shared code or public API/response-contract changes are at least
 `medium`, even if tiny.
 
+**Trivial fast path.** For `trivial` tier the pipeline collapses, not just the panel: skip the
+`explorer` and `architect` dispatches — there is no `2-design.md`. Instead, sharpen the triage's
+`Approach sketch` to ≤5 concrete lines (the files to touch, the change itself); it stands in for
+the design at the gate. Dispatch `success_criteria` as usual (`haiku` is enough at this tier) to
+write a short `3-success-criteria.md` (2–4 criteria); with no design, its pasted input is just
+the request, triage, and fact-check. Everything else is unchanged: both gates, `verify`, the
+1-reviewer inner loop with its oracle baseline, and `fulfillment` (`sonnet`). If implementation
+reveals the task isn't trivial (more files, behavior nuance, contract surface), stop and
+re-triage at `small`+ with the full pipeline.
+
 **Triage has no gate.** Present the overview in chat and continue. Only when the decision is
 `DEFER or DECLINE`, stop and recommend against proceeding, but let the human decide. Persist
 `state.review_only=true|false` from the "Review-only:" line, then set `state.phase="verify"`.
@@ -209,7 +219,9 @@ present its verdict and stop with a recommendation; the human decides. Otherwise
 - Re-run the `architect` as a **revision pass** — it reads its previous `2-design.md` +
   `_design_feedback.md` and revises; it does not re-explore. Re-run `success_criteria` only
   when the product sections changed.
-- For `trivial` complexity, don't interrogate: present the drafts and ask for objections.
+- For `trivial` complexity, follow the fast path: no architect draft — present `1-triage.md`
+  (its `Approach sketch` is the plan) + `3-success-criteria.md` at the gate and ask for
+  objections.
 - Done when **Open questions is empty and the human says they're happy**. Then go to step 4.
 
 ### 4. Design gate
@@ -238,7 +250,8 @@ stages (only those whose config model is `"auto"`; an explicit model keeps its n
 
 The approved panel must be a subset of the configured roster.
 
-Surface the FULL `2-design.md` + `3-success-criteria.md` + `_panel.json` to the human, then
+Surface the FULL `2-design.md` + `3-success-criteria.md` + `_panel.json` to the human (trivial
+fast path: `1-triage.md` + `3-success-criteria.md` + `_panel.json`), then
 **stop for the human's decision.** Approval covers all three. Show the resolved per-stage models
 in the panel summary so the human can bump any up or down before approving (a model change is a
 Revise, folded into this gate — not a new stop). Two human-driven outcomes, recorded on disk:
