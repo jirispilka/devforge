@@ -173,7 +173,11 @@ a claim is fine — remove artifacts it leaves). **For a review-only run the cla
 PR/branch description** (fetch it, e.g. `gh pr view`): tag each thing the PR says it does against
 its actual diff and the codebase — this is the "does the PR do what it claims" lens no reviewer
 covers, since reviewers stay blind to the PR narrative. If core claims are stale or already fixed,
-present its verdict and stop with a recommendation; the human decides. Otherwise set
+present its verdict and stop with a recommendation; the human decides. **If the ledger
+invalidates the requested mechanism but not the goal** (the fix as specified cannot work, e.g.
+an API/SDK constraint, but the problem is real), do not silently design around it: present the
+constraint, the viable options with one recommendation, and wait for the human's pick — record
+it verbatim in `_design_feedback.md` so the architect treats it as settled. Otherwise set
 `state.phase="design"`.
 
 ### 3. Design: subagents draft, then iterate with the human
