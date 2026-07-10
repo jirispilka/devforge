@@ -219,7 +219,9 @@ Do not edit source files until `.devforge/_design.approved` exists. Set
 
 Propose the per-run review panel from the configured roster: start from the triage tier, adjust
 for the actual design scope, and pick from the roster in config order unless the design's risk
-calls for a specific reviewer. **Resolve every `"auto"` model to a concrete name** (see Model
+calls for a specific reviewer. With two or more reviewers, they must differ in lens (e.g.
+diff-correctness vs adversarial vs live-probe vs contract/consumer) — a second same-lens
+reviewer re-finds the first one's findings and adds cost, not signal. **Resolve every `"auto"` model to a concrete name** (see Model
 tiering) at the settled tier — inline on each reviewer, and in a `models` map for the single
 stages (only those whose config model is `"auto"`; an explicit model keeps its name). Write
 `.devforge/_panel.json`:
