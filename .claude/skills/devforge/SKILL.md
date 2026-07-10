@@ -50,7 +50,11 @@ reliably type a slash-command. Surface everything they need into the conversatio
   them away or point at an on-disk path as the only way to see them.
 - **Keep a visible progress view.** Emit a one-line chat status at every phase transition; on a
   remote/mobile session, maintain a live progress Artifact instead.
-- **Gates are chat-first**; slash-commands are a fallback, not the only door.
+- **Gates are chat-first**; slash-commands are a fallback, not the only door. Channel order:
+  plan-mode dialog for the design gate (when `plan_mode_gate=true`), plain chat for everything
+  else. Interactive question widgets (e.g. `AskUserQuestion`) are for genuinely multiple-choice
+  design questions only — never for a gate's approve/revise decision — and after a single stream
+  failure, re-ask in plain chat instead of retrying the widget.
 
 ## Setup / resume
 
