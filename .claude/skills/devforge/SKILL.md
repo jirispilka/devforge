@@ -54,7 +54,10 @@ reliably type a slash-command. Surface everything they need into the conversatio
 
 ## Setup / resume
 
-1. `mkdir -p .devforge`. If `.devforge/.gitignore` is missing, write it: ignore `*` except
+1. Resolve the absolute path of the target repo's `.devforge/` once at setup and use it for
+   every subsequent read/write — never a relative path; in long sessions the working directory
+   drifts, and a relative `_state.json` write can silently land in the wrong directory.
+   `mkdir -p` it. If `.devforge/.gitignore` is missing, write it: ignore `*` except
    `.gitignore`, `config.json`, `registry.json`.
 2. Fresh run: require a non-empty `<task>`. Write it verbatim to `.devforge/_user_request.md`.
    Initialize `_state.json`: `{"phase":"triage","iteration":0,"head_sha":"<git rev-parse HEAD>"}`.
