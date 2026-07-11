@@ -114,6 +114,11 @@ If the dispatched agent has no write access, it returns the artifact verbatim as
 message and the orchestrator persists it to `{role.writes}` **unchanged** — a mechanical relay,
 not authorship; the no-judgment-files rule is not violated. Note the relay in `_progress.md`.
 
+Reviewer findings scope, regardless of what the design emphasizes, always includes two checks:
+committed code must not reference run-internal artifacts (`.devforge/`, plan files, session
+paths); and cruft preserved by a faithful migration is still a finding — "byte-identical"
+instructions cover assertions/behavior, not carried-over dead code.
+
 | role | reads | do NOT read | writes | format |
 |------|-------|-------------|--------|--------|
 | `verify` | `_user_request.md`, `1-triage.md`, codebase, referenced issue; **for a review-only run also the PR/branch description and its diff — treat that description as the claim source** | `2-design.md`, `3-success-criteria.md` | `_request_fact_check.md` | claim ledger: every request claim tagged `VALID \| STALE \| LIKELY-FIXED \| UNVERIFIABLE` with evidence, plus a one-line verdict — never empty |
@@ -121,7 +126,7 @@ not authorship; the no-judgment-files rule is not violated. Note the relay in `_
 | `architect` | `_user_request.md`, `1-triage.md`, `_request_fact_check.md`, `_codebase_map.md` if present, codebase; on a revision pass also its previous `2-design.md` + `_design_feedback.md` | `3-success-criteria.md` | `2-design.md` | the design template in step 3 |
 | `success_criteria` | pasted content of the "What we're solving" and "How it will work" sections of `2-design.md`, plus `_user_request.md` and `1-triage.md` — nothing else | the rest of `2-design.md` (the solution), `claim.md` | `3-success-criteria.md` | numbered, testable criteria — each verifiable by a command or an observable behavior; no solution details |
 | `implementer` | `2-design.md`, `3-success-criteria.md`, `_request_fact_check.md`, `_codebase_map.md` if present, all prior `iter-*/review-*.md` + `final-review-*.md` + `fulfillment.md` | — | source edits + `iter-N/claim.md` | what done · every finding fixed or skipped with a specific reason · for a behavior change, add a regression test — ideally shown red before the fix and green after, with the red→green noted in `claim.md` — never weaken/delete tests |
-| `reviewer` | pasted content of `2-design.md`, `3-success-criteria.md`, `iter-N/diff.patch`, `iter-N/test-results.txt` — nothing else | `claim.md`, peer reviewers' output | `iter-N/review-<use>.md` | first line `VERDICT: PASS\|FAIL` (PASS = zero findings), then findings tagged `blocker\|major\|minor\|nit`. Two always-on checks regardless of what the design emphasizes: committed code must not reference run-internal artifacts (`.devforge/`, plan files, session paths); and cruft preserved by a faithful migration is still a finding — "byte-identical" instructions cover assertions/behavior, not carried-over dead code |
+| `reviewer` | pasted content of `2-design.md`, `3-success-criteria.md`, `iter-N/diff.patch`, `iter-N/test-results.txt` — nothing else | `claim.md`, peer reviewers' output | `iter-N/review-<use>.md` | first line `VERDICT: PASS\|FAIL` (PASS = zero findings), then findings tagged `blocker\|major\|minor\|nit` |
 | `final_reviewer` | same as reviewer, plus the working tree | `claim.md`, peer reviewers' output | `iter-N/final-review-<use>.md` | same verdict format as reviewer |
 | `fulfillment` | pasted content of `3-success-criteria.md`, `iter-N/diff.patch`, `iter-N/test-results.txt`, `iter-N/claim.md`, plus the working tree (may run the non-mutating check a criterion names) | `2-design.md` solution details, review files | `iter-N/fulfillment.md` | first line `VERDICT: PASS\|FAIL`, then each criterion `MET \| NOT MET` with evidence |
 
