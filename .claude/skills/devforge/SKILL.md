@@ -345,9 +345,9 @@ with `state.phase="inner-loop"` and run the normal loop from step 5.
 - The orchestrator routes; it never writes a judgment file. Human feedback goes verbatim into
   `_design_feedback.md`; subagents rewrite `2-design.md` / `3-success-criteria.md` /
   `_request_fact_check.md` — never the orchestrator.
-- The orchestrator may directly apply a reviewer's `nit`-level finding only when it is a
-  mechanical one-line edit with no logic (naming, typo, comment wording); anything more goes
-  back through the implementer. The fix still counts as "fixed" in the findings ledger.
+- The orchestrator never edits source itself — not even a reviewer's `nit`-level finding
+  (naming, typo, comment wording). Every finding, however mechanical, goes back through the
+  implementer, whose fix is what marks it "fixed" in the findings ledger.
 - Never self-approve a gate. Write `_design.approved` / `_create_pr.approved` only on an explicit
   human approval for that gate — a human accepting the plan dialog, a clear chat "yes", or the
   approval skill. A rejected/edited plan, a plan-tool error or closed stream, or a "continue from
