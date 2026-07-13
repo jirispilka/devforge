@@ -1,5 +1,19 @@
 # devforge
 
+> [!IMPORTANT]
+> **devforge has moved and been renamed to `shepherd`.**
+> Active development now lives at **[apify/shepherd](https://github.com/apify/shepherd)**.
+> This repository is no longer maintained — please update your bookmarks, installs, and
+> any local checkouts to the new repo. The plugin, command (`/shepherd`), and run-data
+> directory (`.shepherd/`) are renamed accordingly; behavior is otherwise unchanged.
+>
+> Install the new plugin:
+>
+> ```text
+> /plugin marketplace add apify/shepherd
+> /plugin install shepherd@shepherd
+> ```
+
 devforge is a Claude Code plugin for running coding work through a controlled,
 human-gated loop. `/devforge <task>` separates product triage, request verification,
 design, success criteria, implementation, review, tests, fulfillment, and create-PR
@@ -132,9 +146,12 @@ signals.
 
 ## Install
 
+> This repo is deprecated — install the renamed plugin from
+> [apify/shepherd](https://github.com/apify/shepherd) instead:
+
 ```text
-/plugin marketplace add jirispilka/devforge
-/plugin install devforge@devforge
+/plugin marketplace add apify/shepherd
+/plugin install shepherd@shepherd
 ```
 
 For local development, load the plugin directory directly:
