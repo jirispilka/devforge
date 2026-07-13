@@ -57,7 +57,10 @@ reliably type a slash-command. Surface everything they need into the conversatio
   plan-mode dialog for the design gate (when `plan_mode_gate=true`), plain chat for everything
   else. Interactive question widgets (e.g. `AskUserQuestion`) are for genuinely multiple-choice
   design questions only — never for a gate's approve/revise decision — and after a single stream
-  failure, re-ask in plain chat instead of retrying the widget.
+  failure, re-ask in plain chat instead of retrying the widget. A stream failure also demotes
+  that channel for the rest of the session: once a widget or plan-mode tool has failed once, use
+  plain chat for every later gate and question in the run — don't rediscover the same broken
+  channel at the next stop.
 
 ## Setup / resume
 
@@ -84,6 +87,9 @@ reliably type a slash-command. Surface everything they need into the conversatio
      `architect`, `implementer`, `success_criteria`, `fulfillment`) may be absent from config.
    - Record `oracle.commands`, limits, plan-mode setting, and the fully-resolved registry in
      `_progress.md`.
+   - As each dispatched stage completes, append one ledger line to `_progress.md`: stage ·
+     `use` · model · reported token count · duration. The run's cost lives with the run;
+     totals per stage should be readable with a grep, not reconstructed from chat.
 
 Valid `state.phase` values: `triage`, `verify`, `design`, `design-gate`, `inner-loop`,
 `final-review`, `review-run`, `create-pr`, `done`.
@@ -131,7 +137,7 @@ not authorship; the no-judgment-files rule is not violated. Note the relay in `_
 | `architect` | `_user_request.md`, `1-triage.md`, `_request_fact_check.md`, `_codebase_map.md` if present, codebase; on a revision pass also its previous `2-design.md` + `_design_feedback.md` | `3-success-criteria.md` | `2-design.md` | the design template in step 3 |
 | `success_criteria` | pasted content of the "What we're solving" and "How it will work" sections of `2-design.md`, plus `_user_request.md`, `1-triage.md`, and `_request_fact_check.md` (verified facts — real paths, real coverage gaps — so criteria reference reality instead of guessing; it contains no solution) — nothing else | the rest of `2-design.md` (the solution), `claim.md` | `3-success-criteria.md` | numbered, testable criteria — each verifiable by a command or an observable behavior; no solution details |
 | `implementer` | `2-design.md`, `3-success-criteria.md`, `_request_fact_check.md`, `_codebase_map.md` if present, all prior `iter-*/review-*.md` + `final-review-*.md` + `fulfillment.md` | — | source edits + `iter-N/claim.md` | what done · every finding fixed or skipped with a specific reason · for a behavior change, add a regression test — ideally shown red before the fix and green after, with the red→green noted in `claim.md` — never weaken/delete tests |
-| `reviewer` | pasted content of `2-design.md`, `3-success-criteria.md`, `iter-N/diff.patch`, `iter-N/test-results.txt`, plus the repository itself (working tree, git history, read-only commands) — no other `.devforge/` files | `claim.md`, peer reviewers' output | `iter-N/review-<use>.md` | first line `VERDICT: PASS\|FAIL` (PASS = zero findings), then findings tagged `blocker\|major\|minor\|nit`. Two always-on checks regardless of what the design emphasizes: committed code must not reference run-internal artifacts (`.devforge/`, plan files, session paths); and cruft preserved by a faithful migration is still a finding — "byte-identical" instructions cover assertions/behavior, not carried-over dead code |
+| `reviewer` | pasted content of `2-design.md`, `3-success-criteria.md`, `iter-N/diff.patch`, `iter-N/test-results.txt`, plus the repository itself (working tree, git history, read-only commands) — no other `.devforge/` files | `claim.md`, peer reviewers' output | `iter-N/review-<use>.md` | first line `VERDICT: PASS\|FAIL` (PASS = zero findings), then findings tagged `blocker\|major\|minor\|nit`. Three always-on checks regardless of what the design emphasizes: committed code must not reference run-internal artifacts (`.devforge/`, plan files, session paths); cruft preserved by a faithful migration is still a finding — "byte-identical" instructions cover assertions/behavior, not carried-over dead code; and a comment the diff adds, edits, or moves must still be true of the code it now describes — stale references, wrong claims, and comments restating the obvious are findings |
 | `final_reviewer` | same as reviewer, but judging the post-fix integrated state: interactions with unchanged code, consumer/contract impact, doc/AGENTS staleness — not a second pass over the patch | `claim.md`, peer reviewers' output | `iter-N/final-review-<use>.md` | same verdict format as reviewer |
 | `fulfillment` | pasted content of `3-success-criteria.md`, `iter-N/diff.patch`, `iter-N/test-results.txt`, `iter-N/claim.md`, plus the working tree (may run the non-mutating check a criterion names) | `2-design.md` solution details, review files | `iter-N/fulfillment.md` | first line `VERDICT: PASS\|FAIL`, then each criterion `MET \| NOT MET` with evidence |
 
@@ -140,7 +146,8 @@ not authorship; the no-judgment-files rule is not violated. Note the relay in `_
 `"auto"` (the shipped default) lets the orchestrator pick a model per role and triage tier; an
 explicit name (`opus`, `sonnet`, `haiku`) is used verbatim. Resolve `"auto"` as: `implementer` →
 `haiku` (`sonnet` for `medium`/`large` — a subtle change is not transcription); `verify`,
-`explorer`, `success_criteria`, `reviewer` → `sonnet`; `architect` → `opus`; `final_reviewer` →
+`explorer`, `success_criteria`, `reviewer` → `sonnet`; `architect` → `opus` (`sonnet` for a
+revision pass — it folds feedback into an existing design without re-exploring); `final_reviewer` →
 `opus` (`sonnet` for `trivial`/`small`). `sonnet` is the floor for review — never `haiku`. Resolve
 every `"auto"` once at the design gate (step 4) so the human sees and can edit the picks; record
 them in `_panel.json` and dispatch from there.
@@ -263,7 +270,7 @@ stages (only those whose config model is `"auto"`; an explicit model keeps its n
   "reason": "localized low-risk change",
   "models": { "verify": "sonnet", "architect": "opus", "implementer": "haiku", "success_criteria": "sonnet", "fulfillment": "sonnet" },
   "reviewers": [{ "use": "staff-review", "model": "sonnet" }],
-  "final_reviewers": [{ "use": "code-review", "model": "sonnet" }],
+  "final_reviewers": [{ "use": "thermonuclear", "model": "sonnet" }],
   "inner_iterations": 2,
   "final_review_rounds": 1
 }
